@@ -16,8 +16,6 @@ Future<void> showSheetInTest(WidgetTester tester, String buttonText) async {
 
 void main() {
   group('Anchored Sheets Widget Tests', () {
-    // Clean up any remaining sheets between tests
-
     testWidgets('Basic anchored sheet shows and dismisses correctly',
         (WidgetTester tester) async {
       bool sheetShown = false;
@@ -209,7 +207,7 @@ void main() {
         ),
       );
 
-      // Show the sheet
+      /// Show the sheet
       await showSheetInTest(tester, 'Show Dismissible Sheet');
 
       // Verify sheet is displayed
