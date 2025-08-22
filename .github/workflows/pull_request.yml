@@ -13,19 +13,17 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version-file: pubspec.yaml
           
       - name: Cache Flutter SDK
         uses: actions/cache@v4
         with:
           path: ~/.flutter
           key: flutter-sdk-${{ runner.os }}-${{ hashFiles('pubspec.yaml') }}
-
-      - name: Set up Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version-file: pubspec.yaml
-      - run: flutter pub get
-
 
       - name: Cache pub packages
         uses: actions/cache@v4
@@ -36,6 +34,9 @@ jobs:
           key: pub-packages-${{ runner.os }}-${{ hashFiles('**/pubspec.lock') }}
           restore-keys: |
             pub-packages-${{ runner.os }}-
+          
+      - name: Get dependencies
+        run: flutter pub get
 
       - name: Run custom lint
         run: dart run custom_lint
