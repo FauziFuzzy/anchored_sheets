@@ -43,9 +43,18 @@ void showBasicSheet() async {
   final result = await anchoredSheet<String>(
     context: context,
     builder: (context) => Container(
-      height: 200,
-      child: Center(
-        child: Text('Hello from anchored sheet!'),
+      padding: EdgeInsets.all(20),
+      child: Column(
+        mainAxisSize: MainAxisSize.min, // ✅ Automatically sized!
+        children: [
+          Icon(Icons.info, size: 48),
+          SizedBox(height: 16),
+          Text('Hello from top sheet!'),
+          ElevatedButton(
+            onPressed: () => dismissAnchoredSheet(),
+            child: Text('Close'),
+          ),
+        ],
       ),
     ),
   );
@@ -80,12 +89,12 @@ void showAnchoredMenu() async {
         ListTile(
           leading: Icon(Icons.home),
           title: Text('Home'),
-          onTap: () => context.popAnchorSheet('home'),
+          onTap: () => dismissTopModalSheet('home'),
         ),
         ListTile(
           leading: Icon(Icons.settings),
           title: Text('Settings'),
-          onTap: () => context.popAnchorSheet('settings'),
+          onTap: () => dismissTopModalSheet('settings'),
         ),
       ],
     ),
@@ -97,40 +106,167 @@ void showAnchoredMenu() async {
 }
 ```
 
-## 🧭 Navigation Integration
+## 📚 API Reference
 
-### Sheet → Navigate → Return Pattern
+### `anchoredSheet<T>`
 
-Perfect for selection flows where you need to navigate from a sheet to another screen and return with a value:
+The main function for displaying anchored sheets.
 
 ```dart
-void showSelectionSheet() async {
-  final result = await anchoredSheet<String>(
-    context: context,
-    anchorKey: buttonKey,
-    builder: (context) => Column(
+Future<T?> anchoredSheet<T>({
+  required BuildContext context,
+  required WidgetBuilder builder,
+  
+  // Positioning
+  GlobalKey? anchorKey,           // Anchor to specific widget
+  double? topOffset,              // Manual top offset
+  bool useSafeArea = false,       // Respect status bar/notch
+  
+  // Styling
+  Color? backgroundColor,         // Sheet background color
+  double? elevation,              // Material elevation
+  ShapeBorder? shape,            // Custom shape
+  BorderRadius? borderRadius,     // Corner radius
+  Clip? clipBehavior,            // Clipping behavior
+  BoxConstraints? constraints,    // Size constraints
+  
+  // Interaction
+  bool isDismissible = true,      // Tap outside to dismiss
+  bool enableDrag = false,        // Drag to dismiss
+  bool? showDragHandle,          // Show drag handle
+  Color? dragHandleColor,        // Handle color
+  Size? dragHandleSize,          // Handle size
+  
+  // Animation
+  Duration animationDuration = const Duration(milliseconds: 300),
+  Color overlayColor = Colors.black54,
+  
+  // Scroll behavior
+  bool isScrollControlled = false,
+  double scrollControlDisabledMaxHeightRatio = 9.0 / 16.0,
+})
+```
+
+### `dismissTopModalSheet<T>`
+
+Context-free dismissal function.
+
+```dart
+// Dismiss with result
+dismissTopModalSheet('result_value');
+
+// Dismiss without result
+dismissTopModalSheet();
+
+// From anywhere in your app
+void someUtilityFunction() {
+  // No BuildContext needed! 🎉
+  dismissTopModalSheet('closed_from_utility');
+}
+```
+
+## 🎨 Examples
+
+### Styled Sheet
+
+```dart
+anchoredSheet(
+  context: context,
+  backgroundColor: Colors.purple.shade50,
+  elevation: 10,
+  borderRadius: BorderRadius.only(
+    bottomLeft: Radius.circular(24),
+    bottomRight: Radius.circular(24),
+  ),
+  builder: (context) => Container(
+    padding: EdgeInsets.all(20),
+    child: Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text('Current selection: ${selectedValue ?? 'None'}'),
-        ElevatedButton(
-          onPressed: () async {
-            // Navigate and automatically reopen sheet with result
-            final newValue = await context.popAnchorAndNavigate(
-              MaterialPageRoute(
-                builder: (context) => SelectionScreen(current: selectedValue),
-              ),
-            );
-            
-            if (newValue != null) {
-              // Manually reopen with new value
-              showSelectionSheet(initialValue: newValue);
-            }
-          },
-          child: Text('Select Value'),
-        ),
+        Icon(Icons.palette, size: 48, color: Colors.purple),
+        SizedBox(height: 16),
+        Text('Custom Styled Sheet'),
       ],
     ),
+  ),
+);
+```
+
+### Draggable Sheet
+
+```dart
+anchoredSheet(
+  context: context,
+  enableDrag: true,           // 🖱️ Enable drag to dismiss
+  showDragHandle: true,       // Show drag handle
+  dragHandleColor: Colors.grey,
+  builder: (context) => Container(
+    padding: EdgeInsets.all(20),
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text('Drag me up to dismiss!'),
+        SizedBox(height: 20),
+        // Your content here
+      ],
+    ),
+  ),
+);
+```
+
+### Form Sheet with Return Value
+
+```dart
+void showFormSheet() async {
+  final Map<String, dynamic>? result = await anchoredSheet<Map<String, dynamic>>(
+    context: context,
+    isScrollControlled: true,
+    builder: (context) => FormSheetWidget(),
   );
+  
+  if (result != null) {
+    print('Form data: ${result['name']}, ${result['email']}');
+  }
+}
+
+class FormSheetWidget extends StatefulWidget {
+  @override
+  _FormSheetWidgetState createState() => _FormSheetWidgetState();
+}
+
+class _FormSheetWidgetState extends State<FormSheetWidget> {
+  final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
+  
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.all(20),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: _nameController,
+            decoration: InputDecoration(labelText: 'Name'),
+          ),
+          TextField(
+            controller: _emailController,
+            decoration: InputDecoration(labelText: 'Email'),
+          ),
+          SizedBox(height: 20),
+          ElevatedButton(
+            onPressed: () {
+              dismissTopModalSheet({
+                'name': _nameController.text,
+                'email': _emailController.text,
+              });
+            },
+            child: Text('Submit'),
+          ),
+        ],
+      ),
+    );
+  }
 }
 ```
 
@@ -139,18 +275,37 @@ void showSelectionSheet() async {
 For even more streamlined flows, use the `navigateAndReopenAnchor` method:
 
 ```dart
-void showAdvancedFlow() async {
-  final result = await context.navigateAndReopenAnchor<String>(
-    MaterialPageRoute(builder: (context) => SelectionScreen()),
-    sheetBuilder: (selectedValue) => MyCustomSheet(
-      value: selectedValue,
-      onNavigate: () => _handleNavigation(selectedValue),
+final GlobalKey filterButtonKey = GlobalKey();
+String selectedFilter = 'All';
+
+Widget buildFilterButton() {
+  return ElevatedButton.icon(
+    key: filterButtonKey,
+    onPressed: showFilterMenu,
+    icon: Icon(Icons.filter_list),
+    label: Text('Filter: $selectedFilter'),
+  );
+}
+
+void showFilterMenu() async {
+  final String? result = await anchoredSheet<String>(
+    context: context,
+    anchorKey: filterButtonKey,
+    builder: (context) => Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        'All', 'Recent', 'Favorites', 'Archived'
+      ].map((filter) => ListTile(
+        title: Text(filter),
+        trailing: selectedFilter == filter ? Icon(Icons.check) : null,
+        onTap: () => dismissTopModalSheet(filter),
+      )).toList(),
     ),
-    anchorKey: myButtonKey,
-    reopenOnlyIfResult: true, // Only reopen if navigation returned a value
   );
   
-  print('Final result: $result');
+  if (result != null) {
+    setState(() => selectedFilter = result);
+  }
 }
 ```
 
@@ -159,12 +314,112 @@ void showAdvancedFlow() async {
 Convenient extension methods for common operations:
 
 ```dart
-// Close current anchored sheet
-context.popAnchorSheet('result');
+anchoredSheet(
+  context: context,
+  useSafeArea: true, // ✅ Respects status bar and notch
+  builder: (context) => YourContent(),
+);
+```
 
-// Navigate after dismissing sheet
-final result = await context.popAnchorAndNavigate(
-  MaterialPageRoute(builder: (context) => NextScreen()),
+When a sheet would overlap with the status bar, it automatically:
+- Extends the background color to cover the status bar
+- Maintains proper content positioning
+- Preserves smooth animations
+
+### MainAxisSize.min Support
+
+Unlike many modal implementations, anchored_sheets naturally supports `MainAxisSize.min`:
+
+```dart
+// ✅ This works perfectly!
+Column(
+  mainAxisSize: MainAxisSize.min, // Automatically sizes to content
+  children: [
+    Text('Dynamic content'),
+    if (showExtraContent) 
+      Text('This appears conditionally'),
+    ElevatedButton(
+      onPressed: () => dismissTopModalSheet(),
+      child: Text('Close'),
+    ),
+  ],
+)
+```
+
+### Context-Free Dismissal
+
+Dismiss sheets from anywhere in your app:
+
+```dart
+// In a utility class
+class NotificationService {
+  static void showNotification(String message) {
+    anchoredSheet(
+      context: navigatorKey.currentContext!,
+      builder: (context) => NotificationWidget(message),
+    );
+    
+    // Auto-dismiss after 3 seconds
+    Timer(Duration(seconds: 3), () {
+      dismissTopModalSheet(); // No context needed! 🎉
+    });
+  }
+}
+
+// In a service class
+class ApiService {
+  static Future<void> logout() async {
+    await _performLogout();
+    
+    // Dismiss any open sheets
+    dismissTopModalSheet();
+    
+    // Navigate to login
+    navigatorKey.currentState?.pushReplacementNamed('/login');
+  }
+}
+```
+
+## 🎨 Theming
+
+### Material 3 Integration
+
+```dart
+// In your app theme
+ThemeData(
+  useMaterial3: true,
+  bottomSheetTheme: BottomSheetThemeData(
+    backgroundColor: Colors.white,
+    elevation: 8,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+    ),
+  ),
+)
+
+// Sheets automatically inherit theme
+anchoredSheet(
+  context: context,
+  // backgroundColor, elevation, shape inherited from theme
+  builder: (context) => YourContent(),
+);
+```
+
+### Custom Theming
+
+```dart
+anchoredSheet(
+  context: context,
+  backgroundColor: Theme.of(context).colorScheme.surface,
+  elevation: 12,
+  shape: RoundedRectangleBorder(
+    borderRadius: BorderRadius.circular(20),
+    side: BorderSide(
+      color: Theme.of(context).colorScheme.outline,
+      width: 1,
+    ),
+  ),
+  builder: (context) => YourContent(),
 );
 
 // Complete flow with automatic sheet management
