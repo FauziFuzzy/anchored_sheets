@@ -518,11 +518,8 @@ Contributions are welcome! Please read our [Contributing Guide](CONTRIBUTING.md)
 ## 📧 Support
 
 <!-- <!-- - 🐛 [File an issue](https://github.com/FauziFuzzy/anchored_sheets/issues) -->
-- 💬 [Start a discussion](https://github.com/FauziFuzzy/anchored_sheets/discussions)
+<!-- - 💬 [Start a discussion](https://github.com/FauziFuzzy/anchored_sheets/discussions) -->
 - 📖 [Read the docs](https://pub.dev/packages/anchored_sheets) -->
 
 ---
 
-<p align="center">
-  Made with ❤️ by <a href="https://github.com/FauziFuzzy">FauziFuzzy</a>
-</p>

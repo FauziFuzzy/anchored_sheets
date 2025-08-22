@@ -172,9 +172,13 @@ void main() {
       expect(sheetFinder, findsOneWidget);
 
       // Perform a more aggressive drag gesture upward (to dismiss)
-      // The drag logic expects negative y movement and sufficient velocity/distance
-      await tester.fling(sheetFinder, const Offset(0, -400),
-          1500); // Higher velocity and distance
+      // The drag logic expects negative y movement and sufficient
+      // velocity/distance
+      await tester.fling(
+        sheetFinder,
+        const Offset(0, -400),
+        1500,
+      ); // Higher velocity and distance
       await tester.pumpAndSettle();
 
       // Sheet should be dismissed after significant upward drag

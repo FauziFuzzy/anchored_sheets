@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
-/// Abstract class for handling drag-to-dismiss functionality in modal components
+/// Abstract class for handling drag-to-dismiss
+/// functionality in modal components
 ///
 /// Provides standardized drag gesture handling for modals that can be
 /// dismissed by dragging in a specific direction.

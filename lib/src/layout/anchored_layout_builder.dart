@@ -1,21 +1,26 @@
 /// # Anchored Layout Builder
 ///
-/// This module provides layout utilities for building anchored modal sheets that slide down
-/// from the top of the screen. It handles Material Design theming, safe area considerations,
-/// status bar overlap prevention, and automatic sizing based on content.
+/// This module provides layout utilities for building anchored modal sheets
+/// that slide down from the top of the screen. It handles Material Design
+/// theming, safe area considerations, status bar overlap prevention, and
+/// automatic sizing based on content.
 ///
 /// ## Key Features
 ///
-/// * 🎯 **Smart Positioning** - Automatic anchoring to widgets with status bar awareness
+/// * 🎯 **Smart Positioning** - Automatic anchoring to widgets with status
+///   bar awareness
 /// * 📏 **Natural Sizing** - Supports MainAxisSize.min for content-based height
-/// * 🎨 **Material Theming** - Full Material Design integration with theming support
-/// * 📱 **Status Bar Handling** - Seamless status bar background extension and safe area
+/// * 🎨 **Material Theming** - Full Material Design integration with
+///   theming support
+/// * 📱 **Status Bar Handling** - Seamless status bar background extension
+///   and safe area
 /// * 🎬 **Smooth Animations** - Coordinated slide and fade animations
 /// * 🖱️ **Drag Support** - Optional drag handles with hover states
 ///
 /// ## Architecture
 ///
-/// The layout system follows Flutter's constraint-based approach, similar to showModalBottomSheet:
+/// The layout system follows Flutter's constraint-based approach, similar to
+/// showModalBottomSheet:
 /// - Uses `ConstrainedBox` with `maxHeight` instead of fixed `SizedBox` heights
 /// - Automatically detects and supports `MainAxisSize.min` behavior
 /// - Extends status bar background when sheets overlap with system UI
@@ -23,7 +28,8 @@
 ///
 /// ## Status Bar Handling
 ///
-/// When a sheet would overlap with the status bar (`topOffset <= statusBarHeight`):
+/// When a sheet would overlap with the status bar
+/// (`topOffset <= statusBarHeight`):
 /// 1. Creates a background extension that matches the sheet's styling
 /// 2. Maintains proper slide animations for the entire container
 /// 3. Ensures content takes full width to prevent truncation
@@ -42,8 +48,10 @@ import 'package:flutter/material.dart';
 /// ## Features
 ///
 /// * **Material Theming** - Integrates with app theme and BottomSheetThemeData
-/// * **Drag Handle Support** - Optional drag handle with hover states and semantics
-/// * **Safe Area Integration** - Respects system UI when `useSafeArea` is enabled
+/// * **Drag Handle Support** - Optional drag handle with hover states and
+///   semantics
+/// * **Safe Area Integration** - Respects system UI when `useSafeArea` is
+///   enabled
 /// * **Shape & Clipping** - Full shape border and clipping behavior support
 /// * **Constraints** - Optional size constraints with proper alignment
 ///
@@ -169,7 +177,8 @@ Widget buildModalContent({
 ///
 /// ## Parameters
 ///
-/// * `topOffset` - The height of the click-through area (typically the modal's top position)
+/// * `topOffset` - The height of the click-through area
+/// (typically the modal's top position)
 ///
 /// ## Usage
 ///
@@ -202,16 +211,19 @@ Widget buildClickThroughArea(double topOffset) {
 ///
 /// ## Features
 ///
-/// * **Animated Appearance** - Fades in/out with the modal using provided animation
+/// * **Animated Appearance** - Fades in/out with the modal using provided
+///   animation
 /// * **Tap to Dismiss** - Handles tap events to close the modal
-/// * **Customizable Color** - Supports custom overlay colors with alpha blending
+/// * **Customizable Color** - Supports custom overlay colors with alpha
+///   blending
 /// * **Proper Positioning** - Covers area from modal top to screen bottom
 ///
 /// ## Parameters
 ///
 /// * `topOffset` - Starting position of the overlay (where modal begins)
 /// * `fadeAnimation` - Animation controller for fade in/out effects
-/// * `onTap` - Callback function when overlay is tapped (typically dismisses modal)
+/// * `onTap` - Callback function when overlay is tapped (typically dismisses
+///   modal)
 /// * `overlayColor` - Background color with alpha for the overlay effect
 ///
 /// ## Implementation Details
@@ -253,29 +265,39 @@ Widget buildDismissibleOverlay({
 
 /// Builds the main positioned modal with animations and status bar handling
 ///
-/// This is the core layout function that positions modal content with proper animations,
+/// This is the core layout function that positions modal content with proper
+/// animations, constraint-based sizing, and status bar intelligence.
 /// automatic sizing support, and intelligent status bar overlap handling.
 ///
 /// ## Key Features
 ///
-/// * **MainAxisSize.min Support** - Automatically sizes based on content using constraint-based layout
-/// * **Status Bar Intelligence** - Detects and handles status bar overlap with background extension
-/// * **Smooth Animations** - Coordinated slide and fade animations for professional appearance
-/// * **Width Preservation** - Prevents horizontal truncation when extending to status bar
+/// * **MainAxisSize.min Support** - Automatically sizes based on content
+///   using constraint-based layout
+/// * **Status Bar Intelligence** - Detects and handles status bar overlap
+///   with background extension
+/// * **Smooth Animations** - Coordinated slide and fade animations for
+///   professional appearance
+/// * **Width Preservation** - Prevents horizontal truncation when extending
+///   to status bar
 /// * **Flexible Positioning** - Supports both anchored and absolute positioning
 ///
 /// ## Status Bar Handling Logic
 ///
 /// When `topOffset <= statusBarHeight`, the function automatically:
-/// 1. **Extends Background** - Creates a status bar background matching the sheet color
-/// 2. **Maintains Animation** - Applies slide animation to the entire extended container
-/// 3. **Preserves Width** - Ensures content takes full width to prevent truncation
-/// 4. **Seamless Appearance** - Creates visual continuity between status bar and modal
+/// 1. **Extends Background** - Creates a status bar background matching the
+///    sheet color
+/// 2. **Maintains Animation** - Applies slide animation to the entire
+///    extended container
+/// 3. **Preserves Width** - Ensures content takes full width to prevent
+///    truncation
+/// 4. **Seamless Appearance** - Creates visual continuity between status bar
+///    and modal
 ///
 /// ## MainAxisSize.min Support
 ///
-/// Unlike traditional fixed-height approaches, this function uses `ConstrainedBox` with
-/// `maxHeight` constraints, allowing content with `MainAxisSize.min` to size naturally:
+/// Unlike traditional fixed-height approaches, this function uses
+/// `ConstrainedBox` with `maxHeight` constraints, allowing content with
+/// `MainAxisSize.min` to size naturally:
 ///
 /// ```dart
 /// Column(
@@ -298,7 +320,8 @@ Widget buildDismissibleOverlay({
 /// ## Animation Behavior
 ///
 /// * **Normal Position**: `top = topOffset + (slideAnimation.value * height)`
-/// * **Status Bar Extension**: `top = slideAnimation.value * height` (starts from 0)
+/// * **Status Bar Extension**: `top = slideAnimation.value * height`
+///   (starts from 0)
 ///
 /// This ensures smooth animations regardless of status bar interaction.
 ///
@@ -320,7 +343,7 @@ Widget buildPositionedModal({
   required Widget child,
   required Animation<double> slideAnimation,
   required Animation<double> fadeAnimation,
-  Function(dynamic)? onDismiss,
+  void Function(dynamic)? onDismiss,
   Color? backgroundColor,
   ShapeBorder? shape,
 }) {
@@ -329,7 +352,7 @@ Widget buildPositionedModal({
       final statusBarHeight = MediaQuery.of(context).padding.top;
       final shouldExtendToStatusBar = topOffset <= statusBarHeight;
 
-      Widget content = ConstrainedBox(
+      final Widget content = ConstrainedBox(
         constraints: BoxConstraints(
           maxHeight: height,
           // Don't set minHeight - let the child determine its natural height
@@ -344,7 +367,8 @@ Widget buildPositionedModal({
         ),
       );
 
-      // If sheet overlaps with status bar, extend background and respect safe area
+      // If sheet overlaps with status bar, extend background and respect
+      // safe area
       if (shouldExtendToStatusBar) {
         return Positioned(
           top: slideAnimation.value * height,
@@ -389,14 +413,16 @@ Widget buildPositionedModal({
 
 /// Calculates the appropriate top offset for anchored modals
 ///
-/// This function determines where to position a modal sheet based on anchor points,
+/// This function determines where to position a modal sheet based on anchor
+/// points, safe area constraints, and status bar considerations.
 /// explicit offsets, and status bar considerations.
 ///
 /// ## Calculation Priority
 ///
 /// 1. **Anchor Key** - If provided, positions below the anchored widget
 /// 2. **Explicit Offset** - Falls back to provided topOffset value
-/// 3. **Status Bar Respect** - Optionally ensures minimum distance from status bar
+/// 3. **Status Bar Respect** - Optionally ensures minimum distance from
+///    status bar
 ///
 /// ## Anchor Key Positioning
 ///
@@ -408,13 +434,15 @@ Widget buildPositionedModal({
 ///
 /// ## Status Bar Intelligence
 ///
-/// When `respectStatusBar` is true and calculated offset is very small (< 50px):
+/// When `respectStatusBar` is true and calculated offset is very small
+/// (< 50px):
 /// - Ensures the modal doesn't appear too close to or under the status bar
 /// - Uses `math.max(calculatedOffset, statusBarHeight)` for safe positioning
 ///
 /// ## Parameters
 ///
-/// * `anchorKey` - Optional GlobalKey to anchor the modal below a specific widget
+/// * `anchorKey` - Optional GlobalKey to anchor the modal below a specific
+///   widget
 /// * `topOffset` - Fallback offset when no anchor key is provided
 /// * `context` - BuildContext for accessing MediaQuery (status bar height)
 /// * `respectStatusBar` - Whether to enforce minimum distance from status bar
@@ -484,7 +512,8 @@ double calculateTopOffset({
 ///
 /// * `availableHeight` - Total screen height available for the modal
 /// * `isScrollControlled` - Whether the modal should use full height
-/// * `scrollControlDisabledMaxHeightRatio` - Height ratio when not scroll controlled
+/// * `scrollControlDisabledMaxHeightRatio` - Height ratio when not scroll
+///   controlled
 ///
 /// ## Material Design Compliance
 ///
@@ -615,19 +644,23 @@ class DragHandle extends StatelessWidget {
 
 /// Internal provider for modal dismissal events
 ///
-/// An InheritedWidget that provides dismissal functionality to descendant widgets
-/// without requiring explicit context passing. This enables context-free dismissal
+/// An InheritedWidget that provides dismissal functionality to descendant
+/// widgets without requiring explicit callbacks or global state management.
+/// without requiring explicit context passing. This enables context-free
+/// dismissal
 /// patterns where any widget in the modal tree can trigger dismissal.
 ///
 /// ## Usage Pattern
 ///
-/// This is automatically wrapped around modal content when an `onDismiss` callback
-/// is provided, enabling child widgets to dismiss the modal without needing direct
+/// This is automatically wrapped around modal content when an `onDismiss`
+/// callback is provided, enabling child widgets to dismiss the modal without
+/// needing direct
 /// access to navigation or controller objects.
 ///
 /// ## Implementation Note
 ///
-/// The `updateShouldNotify` returns false because the dismiss function typically
+/// The `updateShouldNotify` returns false because the dismiss function
+/// typically
 /// doesn't change during the widget's lifetime, avoiding unnecessary rebuilds.
 ///
 /// ## Parameters
@@ -638,7 +671,7 @@ class DragHandle extends StatelessWidget {
 /// This is an internal implementation detail and not intended for direct use
 /// outside of the anchored sheets system.
 class _ModalProvider extends InheritedWidget {
-  final Function(dynamic) onDismiss;
+  final void Function(dynamic) onDismiss;
 
   const _ModalProvider({required this.onDismiss, required super.child});
 

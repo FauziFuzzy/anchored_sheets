@@ -228,7 +228,8 @@ class _AnchoredSheetsDemoState extends State<AnchoredSheetsDemo> {
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                  'This sheet automatically sizes to fit its content using MainAxisSize.min',
+                  'This sheet automatically sizes to fit its content using '
+                  'MainAxisSize.min',
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 16),
@@ -263,7 +264,8 @@ class _AnchoredSheetsDemoState extends State<AnchoredSheetsDemo> {
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                  'You can drag this sheet up to dismiss it!\nTry dragging the handle or the content.',
+                  'You can drag this sheet up to dismiss it!\n'
+                  'Try dragging the handle or the content.',
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 16),
@@ -392,7 +394,8 @@ class _AnchoredSheetsDemoState extends State<AnchoredSheetsDemo> {
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                  'This sheet will automatically close in 3 seconds using context-free dismissal.',
+                  'This sheet will automatically close in 3 seconds using '
+                  'context-free dismissal.',
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 8),

@@ -1,14 +1,17 @@
 /// # TopModalSheet
 ///
-/// A Flutter widget that displays modal sheets sliding down from the top of the screen,
-/// similar to `showModalBottomSheet` but positioned at the top. Ideal for filter menus,
-/// notifications, or any content that should appear anchored to the top of the screen.
+/// A Flutter widget that displays modal sheets sliding down from the top of the
+/// screen, similar to `showModalBottomSheet` but positioned at the top. Ideal
+/// for filter menus, notifications, or any content that should appear anchored
+/// to the top of the screen.
 ///
 /// ## Features
 ///
 /// * 🎯 **Anchor positioning** - Attach to specific widgets using GlobalKeys
-/// * 📏 **Height control** - Automatic sizing with overflow constraints like showModalBottomSheet
-/// * 🎨 **Customizable styling** - Full theming support with Material Design integration
+/// * 📏 **Height control** - Automatic sizing with overflow constraints like
+///   showModalBottomSheet
+/// * 🎨 **Customizable styling** - Full theming support with Material Design
+///   integration
 /// * 👆 **Drag to dismiss** - Optional drag handles and gesture support
 /// * 🔄 **Return values** - Get data back when modal is dismissed
 /// * 📱 **Safe area support** - Handles notches and device-specific layouts
@@ -95,7 +98,7 @@ class AnchoredSheet extends StatefulWidget {
   final Size? dragHandleSize;
   final GlobalKey? anchorKey;
   final double? topOffset;
-  final GenericModalController? controller;
+  final GenericModalController<dynamic>? controller;
   final VoidCallback onClosing;
   final bool useSafeArea;
 
@@ -413,7 +416,7 @@ Future<T?> anchoredSheet<T extends Object?>({
   bool useSafeArea = false,
 }) async {
   // Handle duplicate modal calls
-  if (getCurrentController() != null) {
+  if (getCurrentController<GenericModalController<T>>() != null) {
     if (toggleOnDuplicate) {
       await dismissAnchoredSheet();
     }
@@ -464,7 +467,8 @@ Future<T?> anchoredSheet<T extends Object?>({
   return result;
 }
 
-/// Dismisses the currently active TopModalSheet without requiring a BuildContext.
+/// Dismisses the currently active TopModalSheet without requiring a
+/// BuildContext.
 ///
 /// This is the preferred method for dismissing modals as it can be called
 /// from anywhere in your code, including utility functions, services, or
@@ -516,7 +520,8 @@ Future<T?> anchoredSheet<T extends Object?>({
 ///
 /// ## Returns
 ///
-/// Returns a [Future<void>] that completes when the dismissal animation finishes.
+/// Returns a [Future<void>] that completes when the dismissal animation
+/// finishes.
 ///
 /// ## Limitations
 ///
@@ -525,7 +530,8 @@ Future<T?> anchoredSheet<T extends Object?>({
 ///
 /// ## See Also
 ///
-/// * [dismissAnchoredSheetWithContext] - Context-based dismissal for advanced use cases
+/// * [dismissAnchoredSheetWithContext] - Context-based dismissal for advanced
+///   use cases
 /// * [showModalTopSheet] - For showing modals
 Future<void> dismissAnchoredSheet<T extends Object?>([T? result]) async {
   // Try animated dismiss through current state first
@@ -542,7 +548,7 @@ Future<void> dismissAnchoredSheet<T extends Object?>([T? result]) async {
   }
 
   // Fallback to controller-based dismissal
-  final controller = getCurrentController<GenericModalController>();
+  final controller = getCurrentController<GenericModalController<T>>();
   if (controller != null) {
     try {
       controller.dismiss(result);
@@ -567,7 +573,8 @@ Future<void> dismissAnchoredSheet<T extends Object?>([T? result]) async {
 /// ```dart
 /// Widget build(BuildContext context) {
 ///   return ElevatedButton(
-///     onPressed: () => dismissAnchoredSheetWithContext(context, 'result'), // Type inferred
+///     onPressed: () => dismissAnchoredSheetWithContext(context, 'result'),
+///     // Type inferred
 ///     child: Text('Close with Context'),
 ///   );
 /// }

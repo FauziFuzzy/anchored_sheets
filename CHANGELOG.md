@@ -16,7 +16,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 📱 **Safe area support** - Intelligent status bar handling and device-specific layouts
 - ⚡ **Context-free dismissal** - Close modals from anywhere in your code
 - 🎭 **Animation control** - Customizable slide and fade animations with duration settings
-- 📐 **MainAxisSize.min support** - Natural sizing through constraint-based layout system
 - 🔧 **Constraint-based architecture** - Flexible sizing with BoxConstraints support
 - 🌟 **Status bar intelligence** - Automatic background extension when sheets overlap system UI
 - 🎪 **Multiple configuration options** - isDismissible, enableDrag, useSafeArea, and more
@@ -66,8 +65,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Custom styling application
   - Constraint handling
   - Safe area behavior
-  - MainAxisSize.min support
-  - Multiple sheet scenarios
 
 ### Technical Implementation
 - Built on Flutter's overlay system for optimal performance
