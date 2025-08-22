@@ -444,14 +444,16 @@ class _AnchoredSheetState extends State<AnchoredSheet>
 ///
 /// **Duplicate Prevention**: When the same [anchorKey] is used while a sheet
 /// is already open, the existing sheet will be dismissed instead of creating
-/// a duplicate. This prevents UI flickering and provides intuitive toggle behavior.
+/// a duplicate. This prevents UI flickering
+/// and provides intuitive toggle behavior.
 ///
 /// **Automatic Replacement**: By default ([replaceSheet] = true), showing a new
 /// sheet while another is open will smoothly replace the existing one. This
 /// creates a seamless user experience.
 ///
 /// **Modal Management**: Use [dismissOtherModals] to automatically dismiss
-/// other types of modals (bottom sheets, dialogs) before showing the anchored sheet.
+/// other types of modals (bottom sheets, dialogs)
+/// before showing the anchored sheet.
 ///
 /// ## Example Usage
 ///
@@ -518,7 +520,8 @@ class _AnchoredSheetState extends State<AnchoredSheet>
 ///
 /// ### Scroll Behavior
 /// * [isScrollControlled] - Allow sheet to take full height
-/// * [scrollControlDisabledMaxHeightRatio] - Max height ratio when not scroll controlled
+/// * [scrollControlDisabledMaxHeightRatio]
+/// - Max height ratio when not scroll controlled
 ///
 /// ## Returns
 ///

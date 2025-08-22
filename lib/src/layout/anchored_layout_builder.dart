@@ -389,12 +389,14 @@ Widget buildPositionedModal({
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Status bar spacer (transparent since Material provides background)
+                  // Status bar spacer
+                  //(transparent since Material provides background)
                   SizedBox(
                     height: statusBarHeight,
                     width: MediaQuery.sizeOf(context).width,
                   ),
-                  // Content container (also transparent background to avoid double-painting)
+                  // Content container
+                  //(also transparent background to avoid double-painting)
                   SizedBox(
                     width: MediaQuery.sizeOf(context).width,
                     child: DefaultTextStyle(
