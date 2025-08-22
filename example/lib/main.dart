@@ -233,7 +233,7 @@ class _AnchoredSheetsDemoState extends State<AnchoredSheetsDemo> {
                 ),
                 const SizedBox(height: 16),
                 ElevatedButton(
-                  onPressed: () => dismissTopModalSheet(),
+                  onPressed: () => dismissAnchoredSheet(),
                   child: const Text('Close'),
                 ),
               ],
@@ -408,7 +408,7 @@ class _AnchoredSheetsDemoState extends State<AnchoredSheetsDemo> {
 
     // Demonstrate context-free dismissal
     Future.delayed(const Duration(seconds: 3), () {
-      dismissTopModalSheet('auto-dismissed'); // Type inferred as String
+      dismissAnchoredSheet('auto-dismissed'); // Type inferred as String
     });
   }
 
@@ -445,7 +445,7 @@ class _AnchoredSheetsDemoState extends State<AnchoredSheetsDemo> {
       dense: true,
       leading: Icon(icon),
       title: Text(title),
-      onTap: () => dismissTopModalSheet(title), // Type inferred as String
+      onTap: () => dismissAnchoredSheet(title), // Type inferred as String
     );
   }
 
@@ -479,7 +479,7 @@ class _AnchoredSheetsDemoState extends State<AnchoredSheetsDemo> {
       dense: true,
       title: Text(filter),
       trailing: _selectedFilter == filter ? const Icon(Icons.check) : null,
-      onTap: () => dismissTopModalSheet(filter), // Type inferred as String
+      onTap: () => dismissAnchoredSheet(filter), // Type inferred as String
     );
   }
 
@@ -505,7 +505,7 @@ class _AnchoredSheetsDemoState extends State<AnchoredSheetsDemo> {
                     border: OutlineInputBorder(),
                   ),
                   onSubmitted:
-                      (value) => dismissTopModalSheet(
+                      (value) => dismissAnchoredSheet(
                         value,
                       ), // Type inferred as String
                 ),
@@ -552,7 +552,7 @@ class _AnchoredSheetsDemoState extends State<AnchoredSheetsDemo> {
                     setState(() {
                       _notifications = value;
                     });
-                    dismissTopModalSheet(value); // Type inferred as bool
+                    dismissAnchoredSheet(value); // Type inferred as bool
                   },
                 ),
                 ListTile(
@@ -560,7 +560,7 @@ class _AnchoredSheetsDemoState extends State<AnchoredSheetsDemo> {
                   title: const Text('Sign Out'),
                   onTap:
                       () =>
-                          dismissTopModalSheet(false), // Type inferred as bool
+                          dismissAnchoredSheet(false), // Type inferred as bool
                 ),
               ],
             ),
@@ -631,7 +631,7 @@ class _FormSheetContentState extends State<_FormSheetContent> {
                 Expanded(
                   child: TextButton(
                     onPressed:
-                        () => dismissTopModalSheet(
+                        () => dismissAnchoredSheet(
                           null,
                         ), // Type inferred from context
                     child: const Text('Cancel'),
@@ -644,7 +644,7 @@ class _FormSheetContentState extends State<_FormSheetContent> {
                       if (_formKey.currentState!.validate() &&
                           _selectedOption.isNotEmpty) {
                         _formKey.currentState!.save();
-                        dismissTopModalSheet({
+                        dismissAnchoredSheet({
                           // Type inferred as Map<String, dynamic>
                           'option': _selectedOption,
                           'text': _textInput,

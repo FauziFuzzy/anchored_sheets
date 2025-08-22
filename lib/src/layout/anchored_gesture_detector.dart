@@ -40,29 +40,29 @@ class ModalGestureDetector extends StatelessWidget {
     if (enableVerticalDrag) {
       gestures[VerticalDragGestureRecognizer] =
           GestureRecognizerFactoryWithHandlers<VerticalDragGestureRecognizer>(
-            () => VerticalDragGestureRecognizer(debugOwner: this),
-            (instance) {
-              instance
-                ..onStart = onVerticalDragStart
-                ..onUpdate = onVerticalDragUpdate
-                ..onEnd = onVerticalDragEnd
-                ..onlyAcceptDragOnThreshold = true;
-            },
-          );
+        () => VerticalDragGestureRecognizer(debugOwner: this),
+        (instance) {
+          instance
+            ..onStart = onVerticalDragStart
+            ..onUpdate = onVerticalDragUpdate
+            ..onEnd = onVerticalDragEnd
+            ..onlyAcceptDragOnThreshold = true;
+        },
+      );
     }
 
     if (enableHorizontalDrag) {
       gestures[HorizontalDragGestureRecognizer] =
           GestureRecognizerFactoryWithHandlers<HorizontalDragGestureRecognizer>(
-            () => HorizontalDragGestureRecognizer(debugOwner: this),
-            (instance) {
-              instance
-                ..onStart = onHorizontalDragStart
-                ..onUpdate = onHorizontalDragUpdate
-                ..onEnd = onHorizontalDragEnd
-                ..onlyAcceptDragOnThreshold = true;
-            },
-          );
+        () => HorizontalDragGestureRecognizer(debugOwner: this),
+        (instance) {
+          instance
+            ..onStart = onHorizontalDragStart
+            ..onUpdate = onHorizontalDragUpdate
+            ..onEnd = onHorizontalDragEnd
+            ..onlyAcceptDragOnThreshold = true;
+        },
+      );
     }
 
     return RawGestureDetector(
@@ -74,7 +74,7 @@ class ModalGestureDetector extends StatelessWidget {
 }
 
 /// Creates a gesture detector for top modal (drag up to dismiss)
-ModalGestureDetector forTopModal({
+ModalGestureDetector forAnchoredSheet({
   required Widget child,
   GestureDragStartCallback? onDragStart,
   GestureDragUpdateCallback? onDragUpdate,

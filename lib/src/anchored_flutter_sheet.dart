@@ -75,7 +75,7 @@ import 'src.dart';
 ///
 /// This demonstrates how the original TopModalSheet can be refactored
 /// using mixins to reduce code duplication and improve maintainability.
-class SimplifiedTopModalSheet extends StatefulWidget {
+class AnchoredSheet extends StatefulWidget {
   final Widget child;
   final Color? backgroundColor;
   final Color? shadowColor;
@@ -99,7 +99,7 @@ class SimplifiedTopModalSheet extends StatefulWidget {
   final VoidCallback onClosing;
   final bool useSafeArea;
 
-  const SimplifiedTopModalSheet({
+  const AnchoredSheet({
     super.key,
     required this.child,
     required this.onClosing,
@@ -126,15 +126,14 @@ class SimplifiedTopModalSheet extends StatefulWidget {
   });
 
   @override
-  State<SimplifiedTopModalSheet> createState() =>
-      _SimplifiedTopModalSheetState();
+  State<AnchoredSheet> createState() => _AnchoredSheetState();
 }
 
-class _SimplifiedTopModalSheetState extends State<SimplifiedTopModalSheet>
+class _AnchoredSheetState extends State<AnchoredSheet>
     with SingleTickerProviderStateMixin
     implements ModalAnimation, DragDismiss {
   final GlobalKey _childKey = GlobalKey(
-    debugLabel: 'SimplifiedTopModalSheet child',
+    debugLabel: 'AnchoredSheet child',
   );
 
   // ModalAnimationMixin implementation
@@ -352,7 +351,7 @@ class _SimplifiedTopModalSheetState extends State<SimplifiedTopModalSheet>
     );
 
     final gestureDetector = widget.enableDrag
-        ? forTopModal(
+        ? forAnchoredSheet(
             onDragStart: handleDragStart,
             onDragUpdate: handleDragUpdate,
             onDragEnd: handleDragEnd,
@@ -416,7 +415,7 @@ Future<T?> anchoredSheet<T extends Object?>({
   // Handle duplicate modal calls
   if (getCurrentController() != null) {
     if (toggleOnDuplicate) {
-      await dismissTopModalSheet();
+      await dismissAnchoredSheet();
     }
     return null;
   }
@@ -425,7 +424,7 @@ Future<T?> anchoredSheet<T extends Object?>({
   setCurrentController(controller);
 
   final overlayEntry = OverlayEntry(
-    builder: (context) => SimplifiedTopModalSheet(
+    builder: (context) => AnchoredSheet(
       controller: controller,
       onClosing: () {
         if (!controller.isCompleted) {
@@ -475,23 +474,23 @@ Future<T?> anchoredSheet<T extends Object?>({
 ///
 /// ```dart
 /// // Simple dismissal (no type needed)
-/// dismissTopModalSheet();
+/// dismissAnchoredSheet();
 ///
 /// // Dismissal with return value (String)
-/// dismissTopModalSheet<String>('confirmed');
+/// dismissAnchoredSheet<String>('confirmed');
 ///
 /// // Dismissal with return value (Map)
-/// dismissTopModalSheet<Map<String, dynamic>>({'status': 'completed'});
+/// dismissAnchoredSheet<Map<String, dynamic>>({'status': 'completed'});
 ///
 /// // The type can be inferred from the parameter
-/// dismissTopModalSheet('hello'); // T is inferred as String
+/// dismissAnchoredSheet('hello'); // T is inferred as String
 /// ```
 ///
 /// ## In Button Callbacks
 ///
 /// ```dart
 /// ElevatedButton(
-///   onPressed: () => dismissTopModalSheet('confirmed'), // Type inferred
+///   onPressed: () => dismissAnchoredSheet('confirmed'), // Type inferred
 ///   child: Text('Confirm'),
 /// ),
 /// ```
@@ -501,11 +500,11 @@ Future<T?> anchoredSheet<T extends Object?>({
 /// ```dart
 /// class AppUtils {
 ///   static void closeModal() {
-///     dismissTopModalSheet(); // Works without context and without type!
+///     dismissAnchoredSheet(); // Works without context and without type!
 ///   }
 ///
 ///   static void closeWithResult(String result) {
-///     dismissTopModalSheet(result); // Type automatically inferred as String
+///     dismissAnchoredSheet(result); // Type automatically inferred as String
 ///   }
 /// }
 /// ```
@@ -526,11 +525,11 @@ Future<T?> anchoredSheet<T extends Object?>({
 ///
 /// ## See Also
 ///
-/// * [dismissTopModalSheetWithContext] - Context-based dismissal for advanced use cases
+/// * [dismissAnchoredSheetWithContext] - Context-based dismissal for advanced use cases
 /// * [showModalTopSheet] - For showing modals
-Future<void> dismissTopModalSheet<T extends Object?>([T? result]) async {
+Future<void> dismissAnchoredSheet<T extends Object?>([T? result]) async {
   // Try animated dismiss through current state first
-  final state = getCurrentState<_SimplifiedTopModalSheetState>();
+  final state = getCurrentState<_AnchoredSheetState>();
   if (state != null) {
     try {
       if (state.mounted) {
@@ -568,7 +567,7 @@ Future<void> dismissTopModalSheet<T extends Object?>([T? result]) async {
 /// ```dart
 /// Widget build(BuildContext context) {
 ///   return ElevatedButton(
-///     onPressed: () => dismissTopModalSheetWithContext(context, 'result'), // Type inferred
+///     onPressed: () => dismissAnchoredSheetWithContext(context, 'result'), // Type inferred
 ///     child: Text('Close with Context'),
 ///   );
 /// }
@@ -587,11 +586,11 @@ Future<void> dismissTopModalSheet<T extends Object?>([T? result]) async {
 ///
 /// ## See Also
 ///
-/// * [dismissTopModalSheet] - Simpler context-free dismissal (recommended)
-Future<void> dismissTopModalSheetWithContext<T extends Object?>(
+/// * [dismissAnchoredSheet] - Simpler context-free dismissal (recommended)
+Future<void> dismissAnchoredSheetWithContext<T extends Object?>(
   BuildContext context, [
   T? result,
 ]) async {
   // Fallback to context-free dismissal since we're using static references
-  await dismissTopModalSheet(result);
+  await dismissAnchoredSheet(result);
 }
