@@ -8,7 +8,6 @@ A Flutter package for creating modal sheets that slide down from the top of the 
 ## ✨ Features
 
 - 🎯 **Anchor Positioning** - Attach sheets to specific widgets using GlobalKeys
-- 📏 **Natural Sizing** - Automatic content-based height with `MainAxisSize.min` support
 - 🎨 **Material Design** - Full theming integration with Material 3 support
 - 📱 **Status Bar Smart** - Intelligent status bar overlap handling with background extension
 - 🖱️ **Drag Support** - Optional drag-to-dismiss with customizable handles
