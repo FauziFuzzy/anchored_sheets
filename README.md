@@ -2,7 +2,6 @@
 
 [![Pub Version](https://img.shields.io/pub/v/anchored_sheets?style=flat-square)](https://pub.dev/packages/anchored_sheets)
 [![Flutter Package](https://img.shields.io/badge/Flutter-Package-blue?style=flat-square&logo=flutter)](https://flutter.dev)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
 
 A Flutter package for creating modal sheets that slide down from the top of the screen, similar to `showModalBottomSheet` but positioned at the top. Perfect for filter menus, notifications, dropdowns, and any content that should appear anchored to specific widgets or screen positions.
 
@@ -12,7 +11,6 @@ A Flutter package for creating modal sheets that slide down from the top of the 
 - 📏 **Natural Sizing** - Automatic content-based height with `MainAxisSize.min` support
 - 🎨 **Material Design** - Full theming integration with Material 3 support
 - 📱 **Status Bar Smart** - Intelligent status bar overlap handling with background extension
-- 🎬 **Smooth Animations** - Coordinated slide and fade animations
 - 🖱️ **Drag Support** - Optional drag-to-dismiss with customizable handles
 - 🔄 **Context-Free Dismissal** - Dismiss from anywhere without BuildContext
 - ♿ **Accessibility** - Full screen reader and semantic support
