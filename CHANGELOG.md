@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - 🎯 **Anchor positioning** - Attach modal sheets to specific widgets using GlobalKeys
 - 📏 **Height control** - Automatic sizing with overflow constraints like showModalBottomSheet
+- 🎨 **Customizable styling** - Full theming support with Material Design integration
 - 👆 **Drag to dismiss** - Optional drag handles and gesture support with configurable thresholds
 - 🔄 **Return values** - Get data back when modal is dismissed
 - 📱 **Safe area support** - Intelligent status bar handling and device-specific layouts
