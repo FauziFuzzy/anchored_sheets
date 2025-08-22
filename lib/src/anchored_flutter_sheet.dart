@@ -306,7 +306,7 @@ class _SimplifiedTopModalSheetState extends State<SimplifiedTopModalSheet>
     }
   }
 
-  Future<void> _dismiss([dynamic result]) async {
+  Future<void> _dismiss<T extends Object?>([T? result]) async {
     await dismissModal();
     widget.controller?.dismiss(result);
   }
@@ -342,46 +342,44 @@ class _SimplifiedTopModalSheetState extends State<SimplifiedTopModalSheet>
       useSafeArea: widget.useSafeArea,
       showDragHandle: widget.showDragHandle ?? false,
       onDragHandleTap: widget.onClosing,
-      onDragHandleHover:
-          (hovering) => handleDragHandleHover(hovering: hovering),
+      onDragHandleHover: (hovering) =>
+          handleDragHandleHover(hovering: hovering),
       dragHandleStates: dragHandleStates,
       dragHandleColor: widget.dragHandleColor,
       dragHandleSize: widget.dragHandleSize,
     );
 
-    final gestureDetector =
-        widget.enableDrag
-            ? forTopModal(
-              onDragStart: handleDragStart,
-              onDragUpdate: handleDragUpdate,
-              onDragEnd: handleDragEnd,
-              child: modalContent,
-            )
-            : modalContent;
+    final gestureDetector = widget.enableDrag
+        ? forTopModal(
+            onDragStart: handleDragStart,
+            onDragUpdate: handleDragUpdate,
+            onDragEnd: handleDragEnd,
+            child: modalContent,
+          )
+        : modalContent;
 
     return AnimatedBuilder(
       animation: animationController,
-      builder:
-          (context, child) => Stack(
-            children: [
-              buildClickThroughArea(calculatedTopOffset),
-              if (widget.isDismissible)
-                buildDismissibleOverlay(
-                  topOffset: calculatedTopOffset,
-                  fadeAnimation: fadeAnimation,
-                  onTap: _dismiss,
-                  overlayColor: widget.overlayColor,
-                ),
-              buildPositionedModal(
-                topOffset: calculatedTopOffset,
-                height: explicitModalHeight,
-                child: gestureDetector,
-                slideAnimation: slideAnimation,
-                fadeAnimation: fadeAnimation,
-                onDismiss: _dismiss,
-              ),
-            ],
+      builder: (context, child) => Stack(
+        children: [
+          buildClickThroughArea(calculatedTopOffset),
+          if (widget.isDismissible)
+            buildDismissibleOverlay(
+              topOffset: calculatedTopOffset,
+              fadeAnimation: fadeAnimation,
+              onTap: _dismiss,
+              overlayColor: widget.overlayColor,
+            ),
+          buildPositionedModal(
+            topOffset: calculatedTopOffset,
+            height: explicitModalHeight,
+            child: gestureDetector,
+            slideAnimation: slideAnimation,
+            fadeAnimation: fadeAnimation,
+            onDismiss: _dismiss,
           ),
+        ],
+      ),
     );
   }
 }
@@ -423,36 +421,34 @@ Future<T?> showModalTopSheet<T>({
   setCurrentController(controller);
 
   final overlayEntry = OverlayEntry(
-    builder:
-        (context) => SimplifiedTopModalSheet(
-          controller: controller,
-          onClosing: () {
-            if (!controller.isCompleted) {
-              controller.dismiss();
-            }
-          },
-          backgroundColor: backgroundColor,
-          shadowColor: shadowColor,
-          elevation: elevation,
-          shape: shape,
-          clipBehavior: clipBehavior,
-          constraints: constraints,
-          borderRadius: borderRadius,
-          overlayColor: overlayColor,
-          animationDuration: animationDuration,
-          isDismissible: isDismissible,
-          isScrollControlled: isScrollControlled,
-          scrollControlDisabledMaxHeightRatio:
-              scrollControlDisabledMaxHeightRatio,
-          enableDrag: enableDrag,
-          showDragHandle: showDragHandle,
-          dragHandleColor: dragHandleColor,
-          dragHandleSize: dragHandleSize,
-          anchorKey: anchorKey,
-          topOffset: topOffset,
-          useSafeArea: useSafeArea,
-          child: builder(context),
-        ),
+    builder: (context) => SimplifiedTopModalSheet(
+      controller: controller,
+      onClosing: () {
+        if (!controller.isCompleted) {
+          controller.dismiss();
+        }
+      },
+      backgroundColor: backgroundColor,
+      shadowColor: shadowColor,
+      elevation: elevation,
+      shape: shape,
+      clipBehavior: clipBehavior,
+      constraints: constraints,
+      borderRadius: borderRadius,
+      overlayColor: overlayColor,
+      animationDuration: animationDuration,
+      isDismissible: isDismissible,
+      isScrollControlled: isScrollControlled,
+      scrollControlDisabledMaxHeightRatio: scrollControlDisabledMaxHeightRatio,
+      enableDrag: enableDrag,
+      showDragHandle: showDragHandle,
+      dragHandleColor: dragHandleColor,
+      dragHandleSize: dragHandleSize,
+      anchorKey: anchorKey,
+      topOffset: topOffset,
+      useSafeArea: useSafeArea,
+      child: builder(context),
+    ),
   );
 
   Overlay.of(context).insert(overlayEntry);
@@ -474,18 +470,24 @@ Future<T?> showModalTopSheet<T>({
 /// ## Basic Usage
 ///
 /// ```dart
-/// // Simple dismissal
+/// // Simple dismissal (no type needed)
 /// dismissTopModalSheet();
 ///
-/// // Dismissal with return value
-/// dismissTopModalSheet({'status': 'completed'});
+/// // Dismissal with return value (String)
+/// dismissTopModalSheet<String>('confirmed');
+///
+/// // Dismissal with return value (Map)
+/// dismissTopModalSheet<Map<String, dynamic>>({'status': 'completed'});
+///
+/// // The type can be inferred from the parameter
+/// dismissTopModalSheet('hello'); // T is inferred as String
 /// ```
 ///
 /// ## In Button Callbacks
 ///
 /// ```dart
 /// ElevatedButton(
-///   onPressed: () => dismissTopModalSheet('confirmed'),
+///   onPressed: () => dismissTopModalSheet('confirmed'), // Type inferred
 ///   child: Text('Confirm'),
 /// ),
 /// ```
@@ -495,7 +497,11 @@ Future<T?> showModalTopSheet<T>({
 /// ```dart
 /// class AppUtils {
 ///   static void closeModal() {
-///     dismissTopModalSheet(); // Works without context!
+///     dismissTopModalSheet(); // Works without context and without type!
+///   }
+///
+///   static void closeWithResult(String result) {
+///     dismissTopModalSheet(result); // Type automatically inferred as String
 ///   }
 /// }
 /// ```
@@ -518,9 +524,9 @@ Future<T?> showModalTopSheet<T>({
 ///
 /// * [dismissTopModalSheetWithContext] - Context-based dismissal for advanced use cases
 /// * [showModalTopSheet] - For showing modals
-Future<void> dismissTopModalSheet([dynamic result]) async {
+Future<void> dismissTopModalSheet<T extends Object?>([T? result]) async {
   // Try animated dismiss through current state first
-  final state = getCurrentState<dynamic>();
+  final state = getCurrentState<_SimplifiedTopModalSheetState>();
   if (state != null) {
     try {
       if (state.mounted) {
@@ -533,7 +539,7 @@ Future<void> dismissTopModalSheet([dynamic result]) async {
   }
 
   // Fallback to controller-based dismissal
-  final controller = getCurrentController<dynamic>();
+  final controller = getCurrentController<GenericModalController>();
   if (controller != null) {
     try {
       controller.dismiss(result);
@@ -558,7 +564,7 @@ Future<void> dismissTopModalSheet([dynamic result]) async {
 /// ```dart
 /// Widget build(BuildContext context) {
 ///   return ElevatedButton(
-///     onPressed: () => dismissTopModalSheetWithContext(context, 'result'),
+///     onPressed: () => dismissTopModalSheetWithContext(context, 'result'), // Type inferred
 ///     child: Text('Close with Context'),
 ///   );
 /// }
@@ -578,9 +584,9 @@ Future<void> dismissTopModalSheet([dynamic result]) async {
 /// ## See Also
 ///
 /// * [dismissTopModalSheet] - Simpler context-free dismissal (recommended)
-Future<void> dismissTopModalSheetWithContext(
+Future<void> dismissTopModalSheetWithContext<T extends Object?>(
   BuildContext context, [
-  dynamic result,
+  T? result,
 ]) async {
   // Fallback to context-free dismissal since we're using static references
   await dismissTopModalSheet(result);

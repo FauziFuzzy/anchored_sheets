@@ -33,16 +33,15 @@ Widget buildModalContent({
       backgroundColor ?? effectiveTheme.backgroundColor;
   final effectiveShadowColor = shadowColor ?? effectiveTheme.shadowColor;
   final effectiveElevation = elevation ?? effectiveTheme.elevation ?? 0;
-  final effectiveShape =
-      shape ??
+  final effectiveShape = shape ??
       (borderRadius != null
           ? RoundedRectangleBorder(borderRadius: borderRadius)
           : const RoundedRectangleBorder(
-            borderRadius: BorderRadius.only(
-              bottomLeft: Radius.circular(16.0),
-              bottomRight: Radius.circular(16.0),
-            ),
-          ));
+              borderRadius: BorderRadius.only(
+                bottomLeft: Radius.circular(16.0),
+                bottomRight: Radius.circular(16.0),
+              ),
+            ));
   final effectiveClipBehavior =
       clipBehavior ?? effectiveTheme.clipBehavior ?? Clip.none;
 
@@ -53,27 +52,26 @@ Widget buildModalContent({
     shadowColor: effectiveShadowColor,
     shape: effectiveShape,
     clipBehavior: effectiveClipBehavior,
-    child:
-        showDragHandle
-            ? Stack(
-              alignment: Alignment.bottomCenter,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.only(
-                    bottom: kMinInteractiveDimension,
-                  ),
-                  child: child,
+    child: showDragHandle
+        ? Stack(
+            alignment: Alignment.bottomCenter,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(
+                  bottom: kMinInteractiveDimension,
                 ),
-                DragHandle(
-                  onSemanticsTap: onDragHandleTap,
-                  onHover: onDragHandleHover,
-                  states: dragHandleStates ?? <WidgetState>{},
-                  color: dragHandleColor,
-                  size: dragHandleSize,
-                ),
-              ],
-            )
-            : child,
+                child: child,
+              ),
+              DragHandle(
+                onSemanticsTap: onDragHandleTap,
+                onHover: onDragHandleHover,
+                states: dragHandleStates ?? <WidgetState>{},
+                color: dragHandleColor,
+                size: dragHandleSize,
+              ),
+            ],
+          )
+        : child,
   );
 
   if (useSafeArea) {
@@ -124,10 +122,9 @@ Widget buildDismissibleOverlay({
       onTap: onTap,
       child: AnimatedBuilder(
         animation: fadeAnimation,
-        builder:
-            (context, child) => Container(
-              color: overlayColor.withValues(alpha: fadeAnimation.value * 0.5),
-            ),
+        builder: (context, child) => Container(
+          color: overlayColor.withValues(alpha: fadeAnimation.value * 0.5),
+        ),
       ),
     ),
   );
@@ -146,15 +143,17 @@ Widget buildPositionedModal({
     top: topOffset + (slideAnimation.value * height),
     left: 0,
     right: 0,
-    child: SizedBox(
-      height: height,
+    child: ConstrainedBox(
+      constraints: BoxConstraints(
+        maxHeight: height,
+        // Don't set minHeight - let the child determine its natural height
+      ),
       child: ClipRect(
         child: FadeTransition(
           opacity: fadeAnimation,
-          child:
-              onDismiss != null
-                  ? _ModalProvider(onDismiss: onDismiss, child: child)
-                  : child,
+          child: onDismiss != null
+              ? _ModalProvider(onDismiss: onDismiss, child: child)
+              : child,
         ),
       ),
     ),
@@ -222,8 +221,7 @@ class DragHandle extends StatelessWidget {
               width: handleSize.width,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(handleSize.height / 2),
-                color:
-                    color ??
+                color: color ??
                     Theme.of(
                       context,
                     ).colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
