@@ -5,22 +5,6 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.2.1] - 2025-08-23
-
-### 🚀 Fixed - Status Bar Animation Performance
-- **Eliminated Delay**: Fixed visual delay between status bar background and sheet content during animations
-- **Unified Rendering**: Implemented single Material container for synchronized status bar and content rendering
-- **Optimized Timing**: Reduced all animation delays from 50-200ms to 16ms (single frame timing at 60fps)
-- **Smooth Transitions**: Enhanced animation responsiveness from 250ms/200ms to 220ms/180ms for enter/exit
-- **Better Performance**: Eliminated multiple small delays that accumulated to create noticeable lag
-
-### Technical Improvements
-- Status bar and content now render as single unified Material widget
-- Sheet replacement delay optimized from 50ms to 16ms
-- Modal management delays reduced from 200ms/100ms to 16ms  
-- Animation timing improved for more responsive feel
-- Removed rendering desynchronization between status bar extension and sheet content
-
 ## [1.2.0] - 2025-08-23
 
 ### 🚫 Added - Smart Duplicate Prevention
@@ -31,7 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### 🔄 Added - Automatic Sheet Replacement
 - **Default Replacement**: `replaceSheet = true` by default for seamless user experience
-- **Optimized Timing**: Reduced transition delay to 50ms for smoother animations
+- **Optimized Timing**: Reduced transition delay to 16ms for smoother animations
 - **Context Safety**: Added automatic `context.mounted` checks to prevent memory leaks
 - **Graceful Transitions**: Smooth dismissal and re-opening with proper state management
 
@@ -40,6 +24,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Bottom Sheet Integration**: Seamlessly dismisses existing bottom sheets before showing anchored sheets
 - **Dialog Compatibility**: Properly handles alert dialogs and custom dialogs
 - **Smart Coexistence**: SnackBars and material banners can coexist when appropriate
+
+### 🚀 Fixed - Status Bar Animation Performance
+- **Eliminated Delay**: Fixed visual delay between status bar background and sheet content during animations
+- **Unified Rendering**: Implemented single Material container for synchronized status bar and content rendering
+- **Optimized Timing**: Reduced all animation delays from 50-200ms to 16ms (single frame timing at 60fps)
+- **Smooth Transitions**: Enhanced animation responsiveness from 250ms/200ms to 220ms/180ms for enter/exit
+- **Better Performance**: Eliminated multiple small delays that accumulated to create noticeable lag
 
 ### 🏗️ Enhanced - Architecture Improvements
 - **Anchor Key Tracking**: New controller system tracks current anchor keys for intelligent comparison

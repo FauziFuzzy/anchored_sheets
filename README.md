@@ -25,7 +25,7 @@ Add this to your package's `pubspec.yaml` file:
 
 ```yaml
 dependencies:
-  anchored_sheets: ^1.2.1
+  anchored_sheets: ^1.2.0
 ```
 
 Then run:
@@ -381,7 +381,7 @@ void showFilterMenu() async {
 
 ## 🎯 Advanced Features
 
-### ⚡ Performance Optimizations (NEW in v1.2.1)
+### ⚡ Performance Optimizations (NEW in v1.2.0)
 
 Anchored sheets now provide ultra-smooth animations with optimized timing:
 
@@ -665,15 +665,14 @@ anchoredSheet(
 );
 ```
 
-## 🆕 What's New in v1.2.1
+## 🆕 What's New in v1.2.0
 
 ### ⚡ Status Bar Animation Performance
 - **Eliminated Delay**: Fixed visual delay between status bar background and sheet content
 - **Unified Rendering**: Single Material container for synchronized rendering
+- **16ms Timing**: Optimized all delays to single frame timing at 60fps
 - **Smoother Feel**: Enhanced animation responsiveness (220ms/180ms timing)
 - **Zero Lag**: Removed rendering desynchronization issues
-
-## 🆕 What's New in v1.2.0
 
 ### 🚫 Smart Duplicate Prevention
 - **Anchor-based Intelligence**: Uses existing `anchorKey` to detect duplicate sheet requests
