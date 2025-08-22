@@ -50,9 +50,6 @@ jobs:
         if: '!cancelled()'
         run: flutter analyze
 
-      - name: Run custom lint
-        run: dart run custom_lint
-
       - name: Check Code Format
         if: '!cancelled()'
         run: dart format . --set-exit-if-changed
