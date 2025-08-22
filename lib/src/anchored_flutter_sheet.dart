@@ -317,6 +317,8 @@ class _SimplifiedTopModalSheetState extends State<SimplifiedTopModalSheet>
     final calculatedTopOffset = calculateTopOffset(
       anchorKey: widget.anchorKey,
       topOffset: widget.topOffset,
+      context: context,
+      respectStatusBar: true,
     );
     final availableHeight = screenHeight - calculatedTopOffset;
 
@@ -377,6 +379,8 @@ class _SimplifiedTopModalSheetState extends State<SimplifiedTopModalSheet>
             slideAnimation: slideAnimation,
             fadeAnimation: fadeAnimation,
             onDismiss: _dismiss,
+            backgroundColor: widget.backgroundColor,
+            shape: widget.shape,
           ),
         ],
       ),
@@ -385,7 +389,7 @@ class _SimplifiedTopModalSheetState extends State<SimplifiedTopModalSheet>
 }
 
 /// Simplified show function using the refactored modal
-Future<T?> showModalTopSheet<T>({
+Future<T?> anchoredSheet<T extends Object?>({
   required BuildContext context,
   required WidgetBuilder builder,
   Color? backgroundColor,

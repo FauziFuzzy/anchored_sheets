@@ -138,39 +138,99 @@ Widget buildPositionedModal({
   required Animation<double> slideAnimation,
   required Animation<double> fadeAnimation,
   Function(dynamic)? onDismiss,
+  Color? backgroundColor,
+  ShapeBorder? shape,
 }) {
-  return Positioned(
-    top: topOffset + (slideAnimation.value * height),
-    left: 0,
-    right: 0,
-    child: ConstrainedBox(
-      constraints: BoxConstraints(
-        maxHeight: height,
-        // Don't set minHeight - let the child determine its natural height
-      ),
-      child: ClipRect(
-        child: FadeTransition(
-          opacity: fadeAnimation,
-          child: onDismiss != null
-              ? _ModalProvider(onDismiss: onDismiss, child: child)
-              : child,
+  return Builder(
+    builder: (context) {
+      final statusBarHeight = MediaQuery.of(context).padding.top;
+      final shouldExtendToStatusBar = topOffset <= statusBarHeight;
+
+      Widget content = ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: height,
+          // Don't set minHeight - let the child determine its natural height
         ),
-      ),
-    ),
+        child: ClipRect(
+          child: FadeTransition(
+            opacity: fadeAnimation,
+            child: onDismiss != null
+                ? _ModalProvider(onDismiss: onDismiss, child: child)
+                : child,
+          ),
+        ),
+      );
+
+      // If sheet overlaps with status bar, extend background and respect safe area
+      if (shouldExtendToStatusBar) {
+        return Positioned(
+          top: slideAnimation.value * height,
+          left: 0,
+          right: 0,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: height + statusBarHeight,
+              minWidth: MediaQuery.sizeOf(context).width,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Status bar background that matches the sheet style
+                Container(
+                  height: statusBarHeight,
+                  width: MediaQuery.sizeOf(context).width,
+                  color:
+                      backgroundColor ?? Theme.of(context).colorScheme.surface,
+                ),
+                // Content that respects the design
+                SizedBox(
+                  width: MediaQuery.sizeOf(context)
+                      .width, // Ensure content takes full width
+                  child: content,
+                ),
+              ],
+            ),
+          ),
+        );
+      } else {
+        return Positioned(
+          top: topOffset + (slideAnimation.value * height),
+          left: 0,
+          right: 0,
+          child: content,
+        );
+      }
+    },
   );
 }
 
 /// Calculates the appropriate top offset for anchored modals
-double calculateTopOffset({GlobalKey? anchorKey, double? topOffset}) {
+double calculateTopOffset({
+  GlobalKey? anchorKey,
+  double? topOffset,
+  BuildContext? context,
+  bool respectStatusBar = true,
+}) {
+  double calculatedOffset = 0.0;
+
   if (anchorKey != null) {
     final renderBox =
         anchorKey.currentContext?.findRenderObject() as RenderBox?;
     if (renderBox?.hasSize == true) {
       final position = renderBox!.localToGlobal(Offset.zero);
-      return position.dy + renderBox.size.height;
+      calculatedOffset = position.dy + renderBox.size.height;
     }
+  } else {
+    calculatedOffset = topOffset ?? 0.0;
   }
-  return topOffset ?? 0.0;
+
+  // Add status bar height if needed and context is available
+  if (respectStatusBar && context != null && calculatedOffset < 50) {
+    final statusBarHeight = MediaQuery.of(context).padding.top;
+    calculatedOffset = math.max(calculatedOffset, statusBarHeight);
+  }
+
+  return calculatedOffset;
 }
 
 /// Calculates modal height based on scroll control settings
