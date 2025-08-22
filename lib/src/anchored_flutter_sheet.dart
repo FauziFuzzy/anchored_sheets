@@ -178,7 +178,7 @@ class AnchoredSheet extends StatefulWidget {
 
 class _AnchoredSheetState extends State<AnchoredSheet>
     with SingleTickerProviderStateMixin
-    implements ModalAnimation, DragDismiss {
+    implements ModalAnimation, DragDismiss, AnchoredSheetModalManager {
   final GlobalKey _childKey = GlobalKey(
     debugLabel: 'AnchoredSheet child',
   );
@@ -434,7 +434,101 @@ class _AnchoredSheetState extends State<AnchoredSheet>
   }
 }
 
-/// Simplified show function using the refactored modal
+/// Shows an anchored modal sheet that slides down from the top of the screen.
+///
+/// This function creates a modal overlay similar to [showModalBottomSheet] but
+/// positioned at the top. The sheet can be anchored to specific widgets using
+/// [GlobalKey]s for precise positioning.
+///
+/// ## Smart Features (v1.2.0+)
+///
+/// **Duplicate Prevention**: When the same [anchorKey] is used while a sheet
+/// is already open, the existing sheet will be dismissed instead of creating
+/// a duplicate. This prevents UI flickering and provides intuitive toggle behavior.
+///
+/// **Automatic Replacement**: By default ([replaceSheet] = true), showing a new
+/// sheet while another is open will smoothly replace the existing one. This
+/// creates a seamless user experience.
+///
+/// **Modal Management**: Use [dismissOtherModals] to automatically dismiss
+/// other types of modals (bottom sheets, dialogs) before showing the anchored sheet.
+///
+/// ## Example Usage
+///
+/// ```dart
+/// final GlobalKey buttonKey = GlobalKey();
+///
+/// // Basic usage
+/// anchoredSheet(
+///   context: context,
+///   builder: (context) => YourSheetContent(),
+/// );
+///
+/// // Anchored to a specific widget
+/// anchoredSheet(
+///   context: context,
+///   anchorKey: buttonKey,
+///   builder: (context) => MenuContent(),
+/// );
+///
+/// // With smart replacement and modal management
+/// anchoredSheet(
+///   context: context,
+///   anchorKey: buttonKey,
+///   dismissOtherModals: true,
+///   replaceSheet: true, // Default
+///   builder: (context) => FilterContent(),
+/// );
+/// ```
+///
+/// ## Parameters
+///
+/// ### Required
+/// * [context] - The build context for showing the modal
+/// * [builder] - Function that builds the sheet content
+///
+/// ### Positioning
+/// * [anchorKey] - GlobalKey to anchor the sheet to a specific widget
+/// * [topOffset] - Manual offset from the top (overrides anchor positioning)
+/// * [useSafeArea] - Whether to respect status bar and device notches
+///
+/// ### Smart Behavior (NEW in v1.2.0)
+/// * [replaceSheet] - Auto-replace existing sheets (default: true)
+/// * [dismissOtherModals] - Dismiss other modals first (default: false)
+/// * [toggleOnDuplicate] - Enable smart duplicate prevention (default: true)
+///
+/// ### Styling
+/// * [backgroundColor] - Background color of the sheet
+/// * [elevation] - Material elevation and shadow
+/// * [shape] - Custom shape for the sheet
+/// * [borderRadius] - Corner radius (convenience for shape)
+/// * [clipBehavior] - How to clip the sheet content
+/// * [constraints] - Size constraints for the sheet
+///
+/// ### Interaction
+/// * [isDismissible] - Allow tap-outside-to-dismiss (default: true)
+/// * [enableDrag] - Enable drag-to-dismiss gestures (default: false)
+/// * [showDragHandle] - Show a drag handle at the top
+/// * [dragHandleColor] - Color of the drag handle
+/// * [dragHandleSize] - Size of the drag handle
+///
+/// ### Animation
+/// * [animationDuration] - Duration of slide animation (default: 300ms)
+/// * [overlayColor] - Color of the background overlay
+///
+/// ### Scroll Behavior
+/// * [isScrollControlled] - Allow sheet to take full height
+/// * [scrollControlDisabledMaxHeightRatio] - Max height ratio when not scroll controlled
+///
+/// ## Returns
+///
+/// A [Future] that completes when the sheet is dismissed, returning the value
+/// passed to [context.popAnchoredSheet] or null if dismissed without a value.
+///
+/// ## See Also
+///
+/// * [context.popAnchoredSheet] for dismissing sheets
+/// * [AnchoredSheetModalManager] for advanced modal management
 Future<T?> anchoredSheet<T extends Object?>({
   required BuildContext context,
   required WidgetBuilder builder,
@@ -458,17 +552,49 @@ Future<T?> anchoredSheet<T extends Object?>({
   double? topOffset,
   bool toggleOnDuplicate = true,
   bool useSafeArea = false,
+  bool dismissOtherModals = false,
+  bool replaceSheet = true, // Default to true for automatic replacement
 }) async {
-  // Handle duplicate modal calls
-  if (getCurrentController<dynamic>() != null) {
-    if (toggleOnDuplicate) {
+  // Check if there's an existing sheet
+  final currentController = getCurrentController<dynamic>();
+  if (currentController != null) {
+    final currentAnchorKey = getCurrentAnchorKey();
+
+    // Check if this is the same anchor (prevent duplicate)
+    if (anchorKey != null &&
+        anchorKey == currentAnchorKey &&
+        toggleOnDuplicate) {
+      // Same anchor key - dismiss instead of replace
       await dismissAnchoredSheet();
+      return null;
     }
-    return null;
+
+    // For non-anchored sheets, check if calling from same context/button
+    // This could be enhanced further with additional context tracking
+
+    if (replaceSheet) {
+      // Automatic replacement - dismiss current and open new
+      await dismissAnchoredSheet();
+      // Minimal delay only when needed for smooth transition
+      await Future<void>.delayed(const Duration(milliseconds: 16)); // One frame
+      // Check if context is still mounted after the delay
+      if (!context.mounted) return null;
+    } else {
+      // Legacy behavior when replaceSheet = false
+      if (toggleOnDuplicate) {
+        await dismissAnchoredSheet();
+      }
+      return null;
+    }
+  }
+
+  // Handle dismissing other modals first
+  if (dismissOtherModals) {
+    await AnchoredSheetModalManager.dismissOtherModals(context);
   }
 
   final controller = GenericModalController<T>();
-  setCurrentController(controller);
+  setCurrentController(controller, anchorKey);
 
   final overlayEntry = OverlayEntry(
     builder: (context) => AnchoredSheet(
@@ -501,7 +627,13 @@ Future<T?> anchoredSheet<T extends Object?>({
     ),
   );
 
-  Overlay.of(context).insert(overlayEntry);
+  if (context.mounted) {
+    Overlay.of(context).insert(overlayEntry);
+  } else {
+    // Context is no longer mounted, clean up and return null
+    clearController();
+    return null;
+  }
 
   final result = await controller.future;
 

@@ -370,32 +370,40 @@ Widget buildPositionedModal({
       // If sheet overlaps with status bar, extend background and respect
       // safe area
       if (shouldExtendToStatusBar) {
+        // Use a single Material container for unified rendering
+        final unifiedBackground =
+            backgroundColor ?? Theme.of(context).colorScheme.surface;
+
         return Positioned(
           top: slideAnimation.value * height,
           left: 0,
           right: 0,
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              maxHeight: height + statusBarHeight,
-              minWidth: MediaQuery.sizeOf(context).width,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Status bar background that matches the sheet style
-                Container(
-                  height: statusBarHeight,
-                  width: MediaQuery.sizeOf(context).width,
-                  color:
-                      backgroundColor ?? Theme.of(context).colorScheme.surface,
-                ),
-                // Content that respects the design
-                SizedBox(
-                  width: MediaQuery.sizeOf(context)
-                      .width, // Ensure content takes full width
-                  child: content,
-                ),
-              ],
+          child: Material(
+            type: MaterialType.canvas,
+            color: unifiedBackground,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight: height + statusBarHeight,
+                minWidth: MediaQuery.sizeOf(context).width,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Status bar spacer (transparent since Material provides background)
+                  SizedBox(
+                    height: statusBarHeight,
+                    width: MediaQuery.sizeOf(context).width,
+                  ),
+                  // Content container (also transparent background to avoid double-painting)
+                  SizedBox(
+                    width: MediaQuery.sizeOf(context).width,
+                    child: DefaultTextStyle(
+                      style: Theme.of(context).textTheme.bodyMedium!,
+                      child: content,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         );

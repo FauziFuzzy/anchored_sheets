@@ -26,8 +26,8 @@ abstract class ModalAnimation {
   late Animation<double> fadeAnimation;
 
   // Animation constants that can be overridden
-  Duration get enterDuration => const Duration(milliseconds: 250);
-  Duration get exitDuration => const Duration(milliseconds: 200);
+  Duration get enterDuration => const Duration(milliseconds: 220);
+  Duration get exitDuration => const Duration(milliseconds: 180);
   Curve get animationCurve => Curves.easeOutCubic;
 
   bool get dismissUnderway =>

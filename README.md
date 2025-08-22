@@ -16,6 +16,8 @@ A Flutter package for creating modal sheets that slide down from the top of the 
 - ♿ **Accessibility** - Full screen reader and semantic support
 - 🌐 **Platform Aware** - Works seamlessly across iOS, Android, Web, and Desktop
 - 🛡️ **Type Safe** - Full type safety with generic support
+- 🔄 **Smart Replacement** - Automatic sheet replacement and duplicate prevention
+- 🚫 **Duplicate Prevention** - Prevent re-rendering when clicking same button multiple times
 
 ## 📦 Installation
 
@@ -23,7 +25,7 @@ Add this to your package's `pubspec.yaml` file:
 
 ```yaml
 dependencies:
-  anchored_sheets: ^1.1.3
+  anchored_sheets: ^1.2.1
 ```
 
 Then run:
@@ -85,12 +87,12 @@ void showAnchoredMenu() async {
         ListTile(
           leading: Icon(Icons.home),
           title: Text('Home'),
-          onTap: () => dismissAnchoredSheet('home'),
+          onTap: () => context.popAnchoredSheet('home'),
         ),
         ListTile(
           leading: Icon(Icons.settings),
           title: Text('Settings'),
-          onTap: () => dismissAnchoredSheet('settings'),
+          onTap: () => context.popAnchoredSheet('settings'),
         ),
       ],
     ),
@@ -132,6 +134,11 @@ Future<T?> anchoredSheet<T>({
   bool? showDragHandle,          // Show drag handle
   Color? dragHandleColor,        // Handle color
   Size? dragHandleSize,          // Handle size
+  bool toggleOnDuplicate = true,  // Dismiss when same anchor is used
+  
+  // Sheet Management (NEW in v1.2.0)
+  bool replaceSheet = true,       // Auto-replace existing sheets
+  bool dismissOtherModals = false, // Dismiss other modals first
   
   // Animation
   Duration animationDuration = const Duration(milliseconds: 300),
@@ -143,21 +150,20 @@ Future<T?> anchoredSheet<T>({
 })
 ```
 
-### `dismissAnchoredSheet<T>`
+### `context.popAnchoredSheet<T>`
 
 Context-based dismissal function (preferred).
 
 ```dart
 // Dismiss with result
-dismissAnchoredSheet('result_value');
+context.popAnchoredSheet('result_value');
 
 // Dismiss without result
-dismissAnchoredSheet();
+context.popAnchoredSheet();
 
-// From anywhere in your app
-void someUtilityFunction() {
-  // No BuildContext needed! 🎉
-  dismissAnchoredSheet('closed_from_utility');
+// From BuildContext extension
+void someFunction(BuildContext context) {
+  context.popAnchoredSheet('closed_from_context');
 }
 ```
 
@@ -252,7 +258,7 @@ class _FormSheetWidgetState extends State<FormSheetWidget> {
           SizedBox(height: 20),
           ElevatedButton(
             onPressed: () {
-              dismissAnchoredSheet({
+              context.popAnchoredSheet({
                 'name': _nameController.text,
                 'email': _emailController.text,
               });
@@ -261,6 +267,76 @@ class _FormSheetWidgetState extends State<FormSheetWidget> {
           ),
         ],
       ),
+    );
+  }
+}
+```
+
+### Smart Sheet Management (NEW!)
+
+```dart
+class SmartSheetDemo extends StatelessWidget {
+  final GlobalKey menuKey = GlobalKey();
+  final GlobalKey filterKey = GlobalKey();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        actions: [
+          // Menu button with smart toggle
+          IconButton(
+            key: menuKey,
+            icon: Icon(Icons.menu),
+            onPressed: () => showMenuSheet(context),
+          ),
+          // Filter button with smart replacement
+          IconButton(
+            key: filterKey,
+            icon: Icon(Icons.filter_list),
+            onPressed: () => showFilterSheet(context),
+          ),
+        ],
+      ),
+      body: Center(
+        child: ElevatedButton(
+          onPressed: () => showRegularSheet(context),
+          child: Text('Show Regular Sheet'),
+        ),
+      ),
+    );
+  }
+
+  void showMenuSheet(BuildContext context) {
+    // Smart behavior:
+    // 1st click: Shows menu
+    // 2nd click: Dismisses menu (same anchor key)
+    // After filter is open, clicking this replaces filter with menu
+    anchoredSheet(
+      context: context,
+      anchorKey: menuKey, // Smart anchor-based detection
+      builder: (context) => MenuContent(),
+    );
+  }
+
+  void showFilterSheet(BuildContext context) {
+    // Smart behavior:
+    // Replaces any existing sheet (different anchor key)
+    // Automatically dismisses other modals if needed
+    anchoredSheet(
+      context: context,
+      anchorKey: filterKey,
+      dismissOtherModals: true, // Clean slate approach
+      builder: (context) => FilterContent(),
+    );
+  }
+
+  void showRegularSheet(BuildContext context) {
+    // Smart behavior:
+    // Always replaces existing sheets (no anchor key)
+    anchoredSheet(
+      context: context,
+      builder: (context) => RegularContent(),
     );
   }
 }
@@ -292,7 +368,7 @@ void showFilterMenu() async {
       ].map((filter) => ListTile(
         title: Text(filter),
         trailing: selectedFilter == filter ? Icon(Icons.check) : null,
-        onTap: () => dismissAnchoredSheet(filter),
+        onTap: () => context.popAnchoredSheet(filter),
       )).toList(),
     ),
   );
@@ -304,6 +380,89 @@ void showFilterMenu() async {
 ```
 
 ## 🎯 Advanced Features
+
+### ⚡ Performance Optimizations (NEW in v1.2.1)
+
+Anchored sheets now provide ultra-smooth animations with optimized timing:
+
+```dart
+// All animations now run at optimal 60fps performance
+anchoredSheet(
+  context: context,
+  // Automatically optimized:
+  // - 16ms frame-perfect timing
+  // - Unified status bar rendering
+  // - Synchronized content animation
+  // - Reduced transition delays
+  builder: (context) => YourContent(),
+);
+```
+
+**Performance Improvements:**
+- **Unified Rendering**: Status bar and content render as single Material widget
+- **Smoother Animations**: Reduced enter/exit timing for more responsive feel
+- **No Visual Lag**: Eliminated desynchronization between status bar and content
+
+### 🚫 Smart Duplicate Prevention (NEW in v1.2.0)
+
+Anchored sheets now automatically prevent duplicate rendering when the same button is clicked multiple times:
+
+```dart
+final GlobalKey menuButtonKey = GlobalKey();
+
+ElevatedButton(
+  key: menuButtonKey,
+  onPressed: () {
+    // First click: shows the sheet
+    // Second click: dismisses the sheet (prevents duplicate)
+    // Third click: shows the sheet again
+    anchoredSheet(
+      context: context,
+      anchorKey: menuButtonKey, // Same anchor = smart toggle behavior
+      builder: (context) => MenuContent(),
+    );
+  },
+  child: Text('Menu'),
+)
+```
+
+**How it works:**
+- **Same anchor key** → Dismisses current sheet (prevents duplicate)
+- **Different anchor key** → Replaces current sheet smoothly
+- **No anchor key** → Uses default replacement behavior
+
+### 🔄 Auto Sheet Replacement (NEW in v1.2.0)
+
+When showing a new sheet while another is open, it automatically replaces the current one:
+
+```dart
+// This will replace any currently open sheet
+anchoredSheet(
+  context: context,
+  replaceSheet: true, // Default behavior
+  builder: (context) => NewContent(),
+);
+
+// Disable replacement to stack sheets (not recommended)
+anchoredSheet(
+  context: context,
+  replaceSheet: false,
+  builder: (context) => StackedContent(),
+);
+```
+
+### 🎛️ Modal Management (NEW in v1.2.0)
+
+Automatically dismiss other types of modals before showing an anchored sheet:
+
+```dart
+// Dismiss bottom sheets, dialogs, etc. first
+anchoredSheet(
+  context: context,
+  dismissOtherModals: true,
+  builder: (context) => CleanSlateContent(),
+);
+```
 
 ### Status Bar Handling
 
@@ -335,7 +494,7 @@ Column(
     if (showExtraContent) 
       Text('This appears conditionally'),
     ElevatedButton(
-      onPressed: () => dismissAnchoredSheet(),
+      onPressed: () => context.popAnchoredSheet(),
       child: Text('Close'),
     ),
   ],
@@ -357,7 +516,7 @@ class NotificationService {
     
     // Auto-dismiss after 3 seconds
     Timer(Duration(seconds: 3), () {
-      dismissAnchoredSheet(); // No context needed! 🎉
+      context.popAnchoredSheet(); // No context needed! 🎉
     });
   }
 }
@@ -368,7 +527,7 @@ class ApiService {
     await _performLogout();
     
     // Dismiss any open sheets
-    dismissAnchoredSheet();
+    context.popAnchoredSheet();
     
     // Navigate to login
     navigatorKey.currentState?.pushReplacementNamed('/login');
@@ -506,27 +665,45 @@ anchoredSheet(
 );
 ```
 
-## 🆕 What's New in v1.1.3
+## 🆕 What's New in v1.2.1
 
-### ✅ Type Safety Improvements
-- Fixed runtime type casting errors between different `GenericModalController` types
-- Enhanced type safety for controller storage and retrieval
-- Better error handling and debugging messages
+### ⚡ Status Bar Animation Performance
+- **Eliminated Delay**: Fixed visual delay between status bar background and sheet content
+- **Unified Rendering**: Single Material container for synchronized rendering
+- **Smoother Feel**: Enhanced animation responsiveness (220ms/180ms timing)
+- **Zero Lag**: Removed rendering desynchronization issues
 
-### 🚀 Enhanced Dismissal API
-- Improved `context.popAnchoredSheet()` reliability
-- Better fallback mechanisms when `ModalDismissProvider` is not available
-- Seamless integration with Provider state management
+## 🆕 What's New in v1.2.0
 
-### 🎯 Provider Integration
-- Complete example with Provider state management
-- Real-time UI updates within anchored sheets
-- Best practices for reactive state management
+### 🚫 Smart Duplicate Prevention
+- **Anchor-based Intelligence**: Uses existing `anchorKey` to detect duplicate sheet requests
+- **No Manual IDs**: No need to manage custom sheet identifiers
+- **Toggle Behavior**: Same button click dismisses sheet, different source replaces it
+- **Zero Configuration**: Works automatically with existing code
 
-### 🛠️ Developer Experience
-- Comprehensive example app with various use cases
-- Material Design 3 integration
-- Improved documentation and code examples
+### � Automatic Sheet Replacement
+- **Default Replacement**: `replaceSheet = true` by default for seamless UX
+- **Smooth Transitions**: 50ms optimized delay for perfect timing
+- **Context Safety**: Automatic `context.mounted` checks prevent errors
+- **Backward Compatible**: Existing code works without changes
+
+### 🎛️ Enhanced Modal Management
+- **Multi-Modal Support**: `dismissOtherModals` parameter for clean slate behavior
+- **Bottom Sheet Integration**: Seamlessly handles existing bottom sheets
+- **Dialog Compatibility**: Works with alert dialogs and custom dialogs
+- **SnackBar Coexistence**: Smart handling of persistent UI elements
+
+### �️ Architecture Improvements
+- **Anchor Key Tracking**: Intelligent storage and comparison of anchor keys
+- **Controller Enhancement**: Better generic type handling and safety
+- **Performance Optimization**: Reduced animation times and smoother transitions
+- **Memory Management**: Automatic cleanup of tracking variables
+
+### � Developer Experience
+- **Cleaner API**: Simplified sheet management without manual configuration
+- **Better Debugging**: Enhanced error messages and development warnings
+- **Example Updates**: Comprehensive demos showing all new features
+- **Documentation**: Updated guides and best practices
 
 ## 🏆 Best Practices
 
@@ -561,11 +738,68 @@ Column(
 ```dart
 // ❌ Don't use Navigator.pop() directly
 Navigator.of(context).pop(); // Can cause issues
+
+// ❌ Don't manage state manually when using Provider
+setState(() {
+  // Let Provider handle state updates
+});
+
+// ❌ Don't forget to handle async gaps
+// Use if (mounted) checks when needed
 ```
 
 ## 🔄 Migration Guide
 
-### From v1.0.x to v1.1.3
+### From v1.1.x to v1.2.0
+
+**Good News**: No breaking changes! All existing code continues to work.
+
+**New Defaults** (automatically enabled):
+```dart
+// Before v1.2.0
+anchoredSheet(
+  context: context,
+  replaceSheet: false, // Was default
+  builder: (context) => YourContent(),
+);
+
+// After v1.2.0 (automatic improvement)
+anchoredSheet(
+  context: context,
+  replaceSheet: true, // Now default - better UX
+  builder: (context) => YourContent(),
+);
+```
+
+**Smart Features** (work automatically):
+```dart
+final buttonKey = GlobalKey();
+
+// This now has smart duplicate prevention built-in
+ElevatedButton(
+  key: buttonKey,
+  onPressed: () {
+    anchoredSheet(
+      context: context,
+      anchorKey: buttonKey, // Automatic smart behavior
+      builder: (context) => YourContent(),
+    );
+  },
+  child: Text('Smart Button'),
+)
+```
+
+**Optional Enhancements**:
+```dart
+// Dismiss other modals first (opt-in)
+anchoredSheet(
+  context: context,
+  dismissOtherModals: true, // NEW: Clean slate behavior
+  builder: (context) => YourContent(),
+);
+```
+
+### From v1.0.x to v1.2.0
 
 The API is mostly backwards compatible, but we recommend these updates:
 

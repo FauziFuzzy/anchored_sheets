@@ -10,10 +10,12 @@ import 'package:flutter/material.dart';
 // Private variables for storing global modal state
 dynamic _currentController;
 dynamic _currentState;
+GlobalKey? _currentAnchorKey;
 
 /// Sets the current active controller
-void setCurrentController(dynamic controller) {
+void setCurrentController(dynamic controller, [GlobalKey? anchorKey]) {
   _currentController = controller;
+  _currentAnchorKey = anchorKey;
 }
 
 /// Sets the current active state
@@ -29,6 +31,11 @@ T? getCurrentController<T>() {
   return null;
 }
 
+/// Gets the current anchor key
+GlobalKey? getCurrentAnchorKey() {
+  return _currentAnchorKey;
+}
+
 /// Gets the current active state
 T? getCurrentState<T>() {
   if (_currentState is T) {
@@ -40,6 +47,7 @@ T? getCurrentState<T>() {
 /// Clears the controller reference
 void clearController() {
   _currentController = null;
+  _currentAnchorKey = null;
 }
 
 /// Clears the state reference
@@ -51,6 +59,7 @@ void clearState() {
 void clearAll() {
   _currentController = null;
   _currentState = null;
+  _currentAnchorKey = null;
 }
 
 /// Generic modal controller for managing completion state
