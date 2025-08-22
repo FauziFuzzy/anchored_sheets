@@ -50,7 +50,7 @@ void showBasicSheet() {
           SizedBox(height: 16),
           Text('Hello from top sheet!'),
           ElevatedButton(
-            onPressed: () => dismissTopModalSheet(),
+            onPressed: () => dismissAnchoredSheet(),
             child: Text('Close'),
           ),
         ],
@@ -83,12 +83,12 @@ void showAnchoredMenu() async {
         ListTile(
           leading: Icon(Icons.home),
           title: Text('Home'),
-          onTap: () => dismissTopModalSheet('home'),
+          onTap: () => dismissAnchoredSheet('home'),
         ),
         ListTile(
           leading: Icon(Icons.settings),
           title: Text('Settings'),
-          onTap: () => dismissTopModalSheet('settings'),
+          onTap: () => dismissAnchoredSheet('settings'),
         ),
       ],
     ),
@@ -141,21 +141,21 @@ Future<T?> anchoredSheet<T>({
 })
 ```
 
-### `dismissTopModalSheet<T>`
+### `dismissAnchoredSheet<T>`
 
 Context-free dismissal function.
 
 ```dart
 // Dismiss with result
-dismissTopModalSheet('result_value');
+dismissAnchoredSheet('result_value');
 
 // Dismiss without result
-dismissTopModalSheet();
+dismissAnchoredSheet();
 
 // From anywhere in your app
 void someUtilityFunction() {
   // No BuildContext needed! 🎉
-  dismissTopModalSheet('closed_from_utility');
+  dismissAnchoredSheet('closed_from_utility');
 }
 ```
 
@@ -250,7 +250,7 @@ class _FormSheetWidgetState extends State<FormSheetWidget> {
           SizedBox(height: 20),
           ElevatedButton(
             onPressed: () {
-              dismissTopModalSheet({
+              dismissAnchoredSheet({
                 'name': _nameController.text,
                 'email': _emailController.text,
               });
@@ -290,7 +290,7 @@ void showFilterMenu() async {
       ].map((filter) => ListTile(
         title: Text(filter),
         trailing: selectedFilter == filter ? Icon(Icons.check) : null,
-        onTap: () => dismissTopModalSheet(filter),
+        onTap: () => dismissAnchoredSheet(filter),
       )).toList(),
     ),
   );
@@ -333,7 +333,7 @@ Column(
     if (showExtraContent) 
       Text('This appears conditionally'),
     ElevatedButton(
-      onPressed: () => dismissTopModalSheet(),
+      onPressed: () => dismissAnchoredSheet(),
       child: Text('Close'),
     ),
   ],
@@ -355,7 +355,7 @@ class NotificationService {
     
     // Auto-dismiss after 3 seconds
     Timer(Duration(seconds: 3), () {
-      dismissTopModalSheet(); // No context needed! 🎉
+      dismissAnchoredSheet(); // No context needed! 🎉
     });
   }
 }
@@ -366,7 +366,7 @@ class ApiService {
     await _performLogout();
     
     // Dismiss any open sheets
-    dismissTopModalSheet();
+    dismissAnchoredSheet();
     
     // Navigate to login
     navigatorKey.currentState?.pushReplacementNamed('/login');
