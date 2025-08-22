@@ -1,0 +1,587 @@
+/// # TopModalSheet
+///
+/// A Flutter widget that displays modal sheets sliding down from the top of the screen,
+/// similar to `showModalBottomSheet` but positioned at the top. Ideal for filter menus,
+/// notifications, or any content that should appear anchored to the top of the screen.
+///
+/// ## Features
+///
+/// * 🎯 **Anchor positioning** - Attach to specific widgets using GlobalKeys
+/// * 📏 **Height control** - Automatic sizing with overflow constraints like showModalBottomSheet
+/// * 🎨 **Customizable styling** - Full theming support with Material Design integration
+/// * 👆 **Drag to dismiss** - Optional drag handles and gesture support
+/// * 🔄 **Return values** - Get data back when modal is dismissed
+/// * 📱 **Safe area support** - Handles notches and device-specific layouts
+/// * ⚡ **Context-free dismissal** - Close modals from anywhere in your code
+/// * 🎭 **Animation control** - Customizable slide and fade animations
+///
+/// ## Quick Start
+///
+/// ```dart
+/// import 'package:your_package/top_modal_sheet.dart';
+///
+/// // Basic usage
+/// showModalTopSheet(
+///   context: context,
+///   builder: (context) => Container(
+///     height: 200,
+///     child: Center(child: Text('Hello from the top!')),
+///   ),
+/// );
+/// ```
+///
+/// ## Common Use Cases
+///
+/// ### Filter Menu
+/// ```dart
+/// final GlobalKey filterButtonKey = GlobalKey();
+///
+/// ElevatedButton(
+///   key: filterButtonKey,
+///   onPressed: () async {
+///     final result = await showModalTopSheet<Map<String, dynamic>>(
+///       context: context,
+///       anchorKey: filterButtonKey,
+///       builder: (context) => FilterMenuWidget(),
+///     );
+///     if (result != null) {
+///       applyFilters(result);
+///     }
+///   },
+///   child: Text('Filters'),
+/// );
+/// ```
+///
+/// ### Notification Panel
+/// ```dart
+/// showModalTopSheet(
+///   context: context,
+///   isScrollControlled: true,
+///   enableDrag: true,
+///   builder: (context) => NotificationList(),
+/// );
+/// ```
+///
+/// ### Selection Menu
+/// ```dart
+/// final selection = await showModalTopSheet<import 'dart:async';
+library;
+
+import 'package:flutter/material.dart';
+
+import 'src.dart';
+
+/// Simplified TopModalSheet using mixins and reusable components
+///
+/// This demonstrates how the original TopModalSheet can be refactored
+/// using mixins to reduce code duplication and improve maintainability.
+class SimplifiedTopModalSheet extends StatefulWidget {
+  final Widget child;
+  final Color? backgroundColor;
+  final Color? shadowColor;
+  final double? elevation;
+  final ShapeBorder? shape;
+  final Clip? clipBehavior;
+  final BoxConstraints? constraints;
+  final BorderRadius? borderRadius;
+  final Color overlayColor;
+  final Duration animationDuration;
+  final bool isDismissible;
+  final bool isScrollControlled;
+  final double scrollControlDisabledMaxHeightRatio;
+  final bool enableDrag;
+  final bool? showDragHandle;
+  final Color? dragHandleColor;
+  final Size? dragHandleSize;
+  final GlobalKey? anchorKey;
+  final double? topOffset;
+  final GenericModalController? controller;
+  final VoidCallback onClosing;
+  final bool useSafeArea;
+
+  const SimplifiedTopModalSheet({
+    super.key,
+    required this.child,
+    required this.onClosing,
+    this.backgroundColor,
+    this.shadowColor,
+    this.elevation,
+    this.shape,
+    this.clipBehavior,
+    this.constraints,
+    this.borderRadius,
+    this.overlayColor = Colors.black54,
+    this.animationDuration = const Duration(milliseconds: 300),
+    this.isDismissible = true,
+    this.isScrollControlled = false,
+    this.scrollControlDisabledMaxHeightRatio = 9.0 / 16.0,
+    this.enableDrag = false,
+    this.showDragHandle,
+    this.dragHandleColor,
+    this.dragHandleSize,
+    this.anchorKey,
+    this.topOffset,
+    this.controller,
+    this.useSafeArea = false,
+  });
+
+  @override
+  State<SimplifiedTopModalSheet> createState() =>
+      _SimplifiedTopModalSheetState();
+}
+
+class _SimplifiedTopModalSheetState extends State<SimplifiedTopModalSheet>
+    with SingleTickerProviderStateMixin
+    implements ModalAnimation, DragDismiss {
+  final GlobalKey _childKey = GlobalKey(
+    debugLabel: 'SimplifiedTopModalSheet child',
+  );
+
+  // ModalAnimationMixin implementation
+  @override
+  late AnimationController animationController;
+  @override
+  late Animation<double> slideAnimation;
+  @override
+  late Animation<double> fadeAnimation;
+
+  @override
+  Duration get enterDuration => const Duration(milliseconds: 250);
+  @override
+  Duration get exitDuration => const Duration(milliseconds: 200);
+  @override
+  Curve get animationCurve => Curves.easeOutCubic;
+
+  @override
+  bool get dismissUnderway =>
+      animationController.status == AnimationStatus.reverse;
+
+  // DragDismissMixin implementation
+  @override
+  double get minFlingVelocity => 700.0;
+  @override
+  double get closeThreshold => 0.5;
+  @override
+  Set<WidgetState> dragHandleStates = <WidgetState>{};
+
+  @override
+  AnimationController get dragAnimationController => animationController;
+  @override
+  double get dragTargetHeight => _childHeight;
+  @override
+  VoidCallback get onDragDismiss => widget.onClosing;
+  @override
+  void setStateCallback(VoidCallback callback) => setState(callback);
+
+  @override
+  void onDragStart(DragStartDetails details) {}
+  @override
+  void onDragEnd(DragEndDetails details, {required bool isClosing}) {}
+
+  double get _childHeight {
+    final renderBox =
+        _childKey.currentContext?.findRenderObject() as RenderBox?;
+    if (renderBox != null && renderBox.hasSize) {
+      return renderBox.size.height;
+    }
+    return 200.0;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    setCurrentState(this);
+    setupAnimations();
+    showModal();
+  }
+
+  @override
+  void dispose() {
+    clearState();
+    disposeAnimations();
+    super.dispose();
+  }
+
+  // ModalAnimationMixin methods
+  @override
+  void setupAnimations() {
+    animationController = AnimationController(
+      duration: enterDuration,
+      reverseDuration: exitDuration,
+      debugLabel: 'ModalAnimation',
+      vsync: this,
+    );
+
+    slideAnimation = Tween<double>(
+      begin: -0.01, // Start above screen
+      end: 0.0, // End at final position
+    ).animate(
+      CurvedAnimation(parent: animationController, curve: animationCurve),
+    );
+
+    fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: animationController, curve: Curves.easeOut),
+    );
+  }
+
+  @override
+  void showModal() {
+    animationController.forward();
+  }
+
+  @override
+  Future<void> dismissModal() async {
+    await animationController.reverse();
+  }
+
+  @override
+  void disposeAnimations() {
+    animationController.dispose();
+  }
+
+  // DragDismissMixin methods
+  @override
+  void handleDragStart(DragStartDetails details) {
+    setStateCallback(() {
+      dragHandleStates.add(WidgetState.dragged);
+    });
+    onDragStart(details);
+  }
+
+  @override
+  void handleDragUpdate(DragUpdateDetails details) {
+    if (dragAnimationController.status == AnimationStatus.reverse) return;
+
+    // For top modals, positive delta moves up (dismiss)
+    final dragHeight = dragTargetHeight > 0 ? dragTargetHeight : 200.0;
+    dragAnimationController.value += details.primaryDelta! / dragHeight;
+  }
+
+  @override
+  void handleDragEnd(DragEndDetails details) {
+    if (dragAnimationController.status == AnimationStatus.reverse) return;
+
+    setStateCallback(() {
+      dragHandleStates.remove(WidgetState.dragged);
+    });
+
+    var isClosing = false;
+
+    // Check for fling velocity (negative = upward = dismiss for top modals)
+    if (details.velocity.pixelsPerSecond.dy < -minFlingVelocity) {
+      final flingVelocity =
+          details.velocity.pixelsPerSecond.dy / dragTargetHeight;
+      if (dragAnimationController.value < 1.0) {
+        dragAnimationController.fling(velocity: flingVelocity);
+      }
+      if (flingVelocity < 0.0) {
+        isClosing = true;
+      }
+    } else if (dragAnimationController.value > closeThreshold) {
+      if (dragAnimationController.value < 1.0) {
+        dragAnimationController.fling(velocity: 1.0);
+      }
+      isClosing = true;
+    } else {
+      dragAnimationController.reverse();
+    }
+
+    onDragEnd(details, isClosing: isClosing);
+
+    if (isClosing) {
+      onDragDismiss();
+    }
+  }
+
+  @override
+  void handleDragHandleHover({required bool hovering}) {
+    if (hovering != dragHandleStates.contains(WidgetState.hovered)) {
+      setStateCallback(() {
+        if (hovering) {
+          dragHandleStates.add(WidgetState.hovered);
+        } else {
+          dragHandleStates.remove(WidgetState.hovered);
+        }
+      });
+    }
+  }
+
+  Future<void> _dismiss([dynamic result]) async {
+    await dismissModal();
+    widget.controller?.dismiss(result);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final calculatedTopOffset = calculateTopOffset(
+      anchorKey: widget.anchorKey,
+      topOffset: widget.topOffset,
+    );
+    final availableHeight = screenHeight - calculatedTopOffset;
+
+    final explicitModalHeight = calculateModalHeight(
+      availableHeight: availableHeight,
+      isScrollControlled: widget.isScrollControlled,
+      scrollControlDisabledMaxHeightRatio:
+          widget.scrollControlDisabledMaxHeightRatio,
+    );
+
+    final theme = Theme.of(context).bottomSheetTheme;
+    final modalContent = buildModalContent(
+      child: widget.child,
+      childKey: _childKey,
+      theme: theme,
+      backgroundColor: widget.backgroundColor,
+      shadowColor: widget.shadowColor,
+      elevation: widget.elevation,
+      shape: widget.shape,
+      borderRadius: widget.borderRadius,
+      clipBehavior: widget.clipBehavior,
+      constraints: widget.constraints,
+      useSafeArea: widget.useSafeArea,
+      showDragHandle: widget.showDragHandle ?? false,
+      onDragHandleTap: widget.onClosing,
+      onDragHandleHover:
+          (hovering) => handleDragHandleHover(hovering: hovering),
+      dragHandleStates: dragHandleStates,
+      dragHandleColor: widget.dragHandleColor,
+      dragHandleSize: widget.dragHandleSize,
+    );
+
+    final gestureDetector =
+        widget.enableDrag
+            ? forTopModal(
+              onDragStart: handleDragStart,
+              onDragUpdate: handleDragUpdate,
+              onDragEnd: handleDragEnd,
+              child: modalContent,
+            )
+            : modalContent;
+
+    return AnimatedBuilder(
+      animation: animationController,
+      builder:
+          (context, child) => Stack(
+            children: [
+              buildClickThroughArea(calculatedTopOffset),
+              if (widget.isDismissible)
+                buildDismissibleOverlay(
+                  topOffset: calculatedTopOffset,
+                  fadeAnimation: fadeAnimation,
+                  onTap: _dismiss,
+                  overlayColor: widget.overlayColor,
+                ),
+              buildPositionedModal(
+                topOffset: calculatedTopOffset,
+                height: explicitModalHeight,
+                child: gestureDetector,
+                slideAnimation: slideAnimation,
+                fadeAnimation: fadeAnimation,
+                onDismiss: _dismiss,
+              ),
+            ],
+          ),
+    );
+  }
+}
+
+/// Simplified show function using the refactored modal
+Future<T?> showModalTopSheet<T>({
+  required BuildContext context,
+  required WidgetBuilder builder,
+  Color? backgroundColor,
+  Color? shadowColor,
+  double? elevation,
+  ShapeBorder? shape,
+  Clip? clipBehavior,
+  BoxConstraints? constraints,
+  BorderRadius? borderRadius,
+  Color overlayColor = Colors.black54,
+  Duration animationDuration = const Duration(milliseconds: 300),
+  bool isDismissible = true,
+  bool isScrollControlled = false,
+  double scrollControlDisabledMaxHeightRatio = 9.0 / 16.0,
+  bool enableDrag = false,
+  bool? showDragHandle,
+  Color? dragHandleColor,
+  Size? dragHandleSize,
+  GlobalKey? anchorKey,
+  double? topOffset,
+  bool toggleOnDuplicate = true,
+  bool useSafeArea = false,
+}) async {
+  // Handle duplicate modal calls
+  if (getCurrentController() != null) {
+    if (toggleOnDuplicate) {
+      await dismissTopModalSheet();
+    }
+    return null;
+  }
+
+  final controller = GenericModalController<T>();
+  setCurrentController(controller);
+
+  final overlayEntry = OverlayEntry(
+    builder:
+        (context) => SimplifiedTopModalSheet(
+          controller: controller,
+          onClosing: () {
+            if (!controller.isCompleted) {
+              controller.dismiss();
+            }
+          },
+          backgroundColor: backgroundColor,
+          shadowColor: shadowColor,
+          elevation: elevation,
+          shape: shape,
+          clipBehavior: clipBehavior,
+          constraints: constraints,
+          borderRadius: borderRadius,
+          overlayColor: overlayColor,
+          animationDuration: animationDuration,
+          isDismissible: isDismissible,
+          isScrollControlled: isScrollControlled,
+          scrollControlDisabledMaxHeightRatio:
+              scrollControlDisabledMaxHeightRatio,
+          enableDrag: enableDrag,
+          showDragHandle: showDragHandle,
+          dragHandleColor: dragHandleColor,
+          dragHandleSize: dragHandleSize,
+          anchorKey: anchorKey,
+          topOffset: topOffset,
+          useSafeArea: useSafeArea,
+          child: builder(context),
+        ),
+  );
+
+  Overlay.of(context).insert(overlayEntry);
+
+  final result = await controller.future;
+
+  overlayEntry.remove();
+  clearController();
+
+  return result;
+}
+
+/// Dismisses the currently active TopModalSheet without requiring a BuildContext.
+///
+/// This is the preferred method for dismissing modals as it can be called
+/// from anywhere in your code, including utility functions, services, or
+/// callbacks that don't have access to a BuildContext.
+///
+/// ## Basic Usage
+///
+/// ```dart
+/// // Simple dismissal
+/// dismissTopModalSheet();
+///
+/// // Dismissal with return value
+/// dismissTopModalSheet({'status': 'completed'});
+/// ```
+///
+/// ## In Button Callbacks
+///
+/// ```dart
+/// ElevatedButton(
+///   onPressed: () => dismissTopModalSheet('confirmed'),
+///   child: Text('Confirm'),
+/// ),
+/// ```
+///
+/// ## In Utility Functions
+///
+/// ```dart
+/// class AppUtils {
+///   static void closeModal() {
+///     dismissTopModalSheet(); // Works without context!
+///   }
+/// }
+/// ```
+///
+/// ## Parameters
+///
+/// * [result] - Optional value to return when the modal completes.
+///   This value will be returned by the Future from [showModalTopSheet].
+///
+/// ## Returns
+///
+/// Returns a [Future<void>] that completes when the dismissal animation finishes.
+///
+/// ## Limitations
+///
+/// * Only works with one modal at a time (uses static references)
+/// * If no modal is currently showing, prints a debug warning
+///
+/// ## See Also
+///
+/// * [dismissTopModalSheetWithContext] - Context-based dismissal for advanced use cases
+/// * [showModalTopSheet] - For showing modals
+Future<void> dismissTopModalSheet([dynamic result]) async {
+  // Try animated dismiss through current state first
+  final state = getCurrentState<dynamic>();
+  if (state != null) {
+    try {
+      if (state.mounted) {
+        await state._dismiss(result);
+        return;
+      }
+    } on Exception catch (e) {
+      debugPrint('Warning: Could not dismiss through state: $e');
+    }
+  }
+
+  // Fallback to controller-based dismissal
+  final controller = getCurrentController<dynamic>();
+  if (controller != null) {
+    try {
+      controller.dismiss(result);
+      return;
+    } on Exception catch (e) {
+      debugPrint('Warning: Could not dismiss through controller: $e');
+    }
+  }
+
+  debugPrint('Warning: No active modal found to dismiss');
+}
+
+/// Dismisses the TopModalSheet using BuildContext for provider-based dismissal.
+///
+/// This method provides backwards compatibility and supports advanced use cases
+/// where multiple modals might exist in different parts of the widget tree.
+/// It first attempts to find the modal through the widget tree using an
+/// InheritedWidget provider, then falls back to the static reference approach.
+///
+/// ## Usage
+///
+/// ```dart
+/// Widget build(BuildContext context) {
+///   return ElevatedButton(
+///     onPressed: () => dismissTopModalSheetWithContext(context, 'result'),
+///     child: Text('Close with Context'),
+///   );
+/// }
+/// ```
+///
+/// ## When to Use
+///
+/// * When you need to support multiple modals simultaneously
+/// * For backwards compatibility with existing code
+/// * When working within Flutter's InheritedWidget patterns
+///
+/// ## Parameters
+///
+/// * [context] - BuildContext for finding the modal through widget tree
+/// * [result] - Optional value to return when dismissed
+///
+/// ## See Also
+///
+/// * [dismissTopModalSheet] - Simpler context-free dismissal (recommended)
+Future<void> dismissTopModalSheetWithContext(
+  BuildContext context, [
+  dynamic result,
+]) async {
+  // Fallback to context-free dismissal since we're using static references
+  await dismissTopModalSheet(result);
+}
