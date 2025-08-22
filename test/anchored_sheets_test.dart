@@ -207,7 +207,7 @@ void main() {
         ),
       );
 
-      // Show the sheet
+      /// Show the sheet
       await showSheetInTest(tester, 'Show Dismissible Sheet');
 
       // Verify sheet is displayed
