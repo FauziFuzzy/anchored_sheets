@@ -11,9 +11,11 @@ A Flutter package for creating modal sheets that slide down from the top of the 
 - 🎨 **Material Design** - Full theming integration with Material 3 support
 - 📱 **Status Bar Smart** - Intelligent status bar overlap handling with background extension
 - 🖱️ **Drag Support** - Optional drag-to-dismiss with customizable handles
-- 🔄 **Context-Free Dismissal** - Dismiss from anywhere without BuildContext
+- 🔄 **Easy Dismissal** - Simple `context.popAnchoredSheet()` method for closing sheets
+- 🚀 **Provider Ready** - Built-in support for state management patterns
 - ♿ **Accessibility** - Full screen reader and semantic support
 - 🌐 **Platform Aware** - Works seamlessly across iOS, Android, Web, and Desktop
+- 🛡️ **Type Safe** - Full type safety with generic support
 
 ## 📦 Installation
 
@@ -21,7 +23,7 @@ Add this to your package's `pubspec.yaml` file:
 
 ```yaml
 dependencies:
-  anchored_sheets: ^1.0.0
+  anchored_sheets: ^1.1.3
 ```
 
 Then run:
@@ -50,7 +52,7 @@ void showBasicSheet() {
           SizedBox(height: 16),
           Text('Hello from top sheet!'),
           ElevatedButton(
-            onPressed: () => dismissTopModalSheet(),
+            onPressed: () => context.popAnchoredSheet(),
             child: Text('Close'),
           ),
         ],
@@ -83,12 +85,12 @@ void showAnchoredMenu() async {
         ListTile(
           leading: Icon(Icons.home),
           title: Text('Home'),
-          onTap: () => dismissTopModalSheet('home'),
+          onTap: () => dismissAnchoredSheet('home'),
         ),
         ListTile(
           leading: Icon(Icons.settings),
           title: Text('Settings'),
-          onTap: () => dismissTopModalSheet('settings'),
+          onTap: () => dismissAnchoredSheet('settings'),
         ),
       ],
     ),
@@ -141,21 +143,21 @@ Future<T?> anchoredSheet<T>({
 })
 ```
 
-### `dismissTopModalSheet<T>`
+### `dismissAnchoredSheet<T>`
 
-Context-free dismissal function.
+Context-based dismissal function (preferred).
 
 ```dart
 // Dismiss with result
-dismissTopModalSheet('result_value');
+dismissAnchoredSheet('result_value');
 
 // Dismiss without result
-dismissTopModalSheet();
+dismissAnchoredSheet();
 
 // From anywhere in your app
 void someUtilityFunction() {
   // No BuildContext needed! 🎉
-  dismissTopModalSheet('closed_from_utility');
+  dismissAnchoredSheet('closed_from_utility');
 }
 ```
 
@@ -250,7 +252,7 @@ class _FormSheetWidgetState extends State<FormSheetWidget> {
           SizedBox(height: 20),
           ElevatedButton(
             onPressed: () {
-              dismissTopModalSheet({
+              dismissAnchoredSheet({
                 'name': _nameController.text,
                 'email': _emailController.text,
               });
@@ -290,7 +292,7 @@ void showFilterMenu() async {
       ].map((filter) => ListTile(
         title: Text(filter),
         trailing: selectedFilter == filter ? Icon(Icons.check) : null,
-        onTap: () => dismissTopModalSheet(filter),
+        onTap: () => dismissAnchoredSheet(filter),
       )).toList(),
     ),
   );
@@ -333,7 +335,7 @@ Column(
     if (showExtraContent) 
       Text('This appears conditionally'),
     ElevatedButton(
-      onPressed: () => dismissTopModalSheet(),
+      onPressed: () => dismissAnchoredSheet(),
       child: Text('Close'),
     ),
   ],
@@ -355,7 +357,7 @@ class NotificationService {
     
     // Auto-dismiss after 3 seconds
     Timer(Duration(seconds: 3), () {
-      dismissTopModalSheet(); // No context needed! 🎉
+      dismissAnchoredSheet(); // No context needed! 🎉
     });
   }
 }
@@ -366,7 +368,7 @@ class ApiService {
     await _performLogout();
     
     // Dismiss any open sheets
-    dismissTopModalSheet();
+    dismissAnchoredSheet();
     
     // Navigate to login
     navigatorKey.currentState?.pushReplacementNamed('/login');
@@ -502,6 +504,104 @@ anchoredSheet(
   animationDuration: Duration(milliseconds: 200), // Faster
   builder: (context) => YourContent(),
 );
+```
+
+## 🆕 What's New in v1.1.3
+
+### ✅ Type Safety Improvements
+- Fixed runtime type casting errors between different `GenericModalController` types
+- Enhanced type safety for controller storage and retrieval
+- Better error handling and debugging messages
+
+### 🚀 Enhanced Dismissal API
+- Improved `context.popAnchoredSheet()` reliability
+- Better fallback mechanisms when `ModalDismissProvider` is not available
+- Seamless integration with Provider state management
+
+### 🎯 Provider Integration
+- Complete example with Provider state management
+- Real-time UI updates within anchored sheets
+- Best practices for reactive state management
+
+### 🛠️ Developer Experience
+- Comprehensive example app with various use cases
+- Material Design 3 integration
+- Improved documentation and code examples
+
+## 🏆 Best Practices
+
+### ✅ Do's
+```dart
+// ✅ Use context.popAnchoredSheet() for dismissal
+ElevatedButton(
+  onPressed: () => context.popAnchoredSheet('result'),
+  child: Text('Close'),
+)
+
+// ✅ Use Provider for state management
+Consumer<AppState>(
+  builder: (context, state, child) => YourWidget(),
+)
+
+// ✅ Set useSafeArea for proper status bar handling
+anchoredSheet(
+  context: context,
+  useSafeArea: true,
+  builder: (context) => YourContent(),
+)
+
+// ✅ Use MainAxisSize.min for auto-sizing
+Column(
+  mainAxisSize: MainAxisSize.min,
+  children: [...],
+)
+```
+
+### ❌ Don'ts
+```dart
+// ❌ Don't use Navigator.pop() directly
+Navigator.of(context).pop(); // Can cause issues
+```
+
+## 🔄 Migration Guide
+
+### From v1.0.x to v1.1.3
+
+The API is mostly backwards compatible, but we recommend these updates:
+
+```dart
+// Old (still works)
+dismissAnchoredSheet('result');
+
+// New (recommended)
+context.popAnchoredSheet('result');
+```
+
+### Adding Provider Support
+
+```dart
+// 1. Add provider dependency
+dependencies:
+  provider: ^6.1.2
+
+// 2. Update your main app
+void main() {
+  runApp(
+    ChangeNotifierProvider(
+      create: (context) => AppState(),
+      child: MyApp(),
+    ),
+  );
+}
+
+// 3. Use Consumer in your sheets
+Consumer<AppState>(
+  builder: (context, appState, child) {
+    return YourSheetContent(
+      onChanged: (value) => appState.updateValue(value),
+    );
+  },
+)
 ```
 
 <!-- ## 🤝 Contributing

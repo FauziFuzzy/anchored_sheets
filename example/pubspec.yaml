@@ -12,6 +12,8 @@ dependencies:
     
   anchored_sheets:
     path: ../
+  
+  provider: ^6.1.2
 
   cupertino_icons: ^1.0.8
 

@@ -23,12 +23,18 @@ void setCurrentState(dynamic state) {
 
 /// Gets the current active controller
 T? getCurrentController<T>() {
-  return _currentController as T?;
+  if (_currentController is T) {
+    return _currentController as T;
+  }
+  return null;
 }
 
 /// Gets the current active state
 T? getCurrentState<T>() {
-  return _currentState as T?;
+  if (_currentState is T) {
+    return _currentState as T;
+  }
+  return null;
 }
 
 /// Clears the controller reference

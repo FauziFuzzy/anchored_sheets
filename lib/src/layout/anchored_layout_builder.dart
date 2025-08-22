@@ -670,11 +670,22 @@ class DragHandle extends StatelessWidget {
 ///
 /// This is an internal implementation detail and not intended for direct use
 /// outside of the anchored sheets system.
-class _ModalProvider extends InheritedWidget {
+class ModalDismissProvider extends InheritedWidget {
   final void Function(dynamic) onDismiss;
 
-  const _ModalProvider({required this.onDismiss, required super.child});
+  const ModalDismissProvider({
+    super.key,
+    required this.onDismiss,
+    required super.child,
+  });
+
+  static ModalDismissProvider? maybeOf(BuildContext context) {
+    return context.dependOnInheritedWidgetOfExactType<ModalDismissProvider>();
+  }
 
   @override
-  bool updateShouldNotify(_ModalProvider oldWidget) => false;
+  bool updateShouldNotify(ModalDismissProvider oldWidget) => false;
 }
+
+/// Legacy alias for backward compatibility
+typedef _ModalProvider = ModalDismissProvider;

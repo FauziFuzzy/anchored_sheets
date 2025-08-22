@@ -67,12 +67,56 @@
 ///
 /// ### Selection Menu
 /// ```dart
-/// final selection = await showModalTopSheet<import 'dart:async';
+/// final selection = await showModalTopSheet<String>(
+/// ```
 library;
+
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 
 import 'src.dart';
+
+/// Extension methods for BuildContext to provide
+/// convenient anchored sheet operations
+extension AnchoredSheetContext on BuildContext {
+  /// Hide the current anchored sheet
+  ///
+  /// Usage:
+  /// ```dart
+  /// context.popSheet();
+  /// context.popSheet('result');
+  /// ```
+
+  /// Alternative shorter name
+  Future<void> popAnchoredSheet<T>([T? result]) async {
+    await AnchoredSheetPop.of(this)?.pop(result);
+  }
+}
+
+/// AnchoredSheetPop utility class for context-based dismissal
+class AnchoredSheetPop {
+  final BuildContext _context;
+
+  AnchoredSheetPop._(this._context);
+
+  /// Get AnchoredSheetPop instance from context
+  static AnchoredSheetPop? of(BuildContext context) {
+    return AnchoredSheetPop._(context);
+  }
+
+  /// Hide/dismiss the anchored sheet
+  Future<void> pop<T>([T? result]) async {
+    // Try to find the modal provider in the widget tree
+    final provider = ModalDismissProvider.maybeOf(_context);
+    if (provider != null) {
+      provider.onDismiss(result);
+    } else {
+      // Fallback to the global dismissal mechanism
+      await dismissAnchoredSheet(result);
+    }
+  }
+}
 
 /// Simplified TopModalSheet using mixins and reusable components
 ///
@@ -416,7 +460,7 @@ Future<T?> anchoredSheet<T extends Object?>({
   bool useSafeArea = false,
 }) async {
   // Handle duplicate modal calls
-  if (getCurrentController<GenericModalController<T>>() != null) {
+  if (getCurrentController<dynamic>() != null) {
     if (toggleOnDuplicate) {
       await dismissAnchoredSheet();
     }
@@ -478,23 +522,23 @@ Future<T?> anchoredSheet<T extends Object?>({
 ///
 /// ```dart
 /// // Simple dismissal (no type needed)
-/// dismissAnchoredSheet();
+/// context.popAnchoredSheet();
 ///
 /// // Dismissal with return value (String)
-/// dismissAnchoredSheet<String>('confirmed');
+/// context.popAnchoredSheet<String>('confirmed');
 ///
 /// // Dismissal with return value (Map)
-/// dismissAnchoredSheet<Map<String, dynamic>>({'status': 'completed'});
+/// context.popAnchoredSheet<Map<String, dynamic>>({'status': 'completed'});
 ///
 /// // The type can be inferred from the parameter
-/// dismissAnchoredSheet('hello'); // T is inferred as String
+/// context.popAnchoredSheet('hello'); // T is inferred as String
 /// ```
 ///
 /// ## In Button Callbacks
 ///
 /// ```dart
 /// ElevatedButton(
-///   onPressed: () => dismissAnchoredSheet('confirmed'), // Type inferred
+///   onPressed: () => context.popAnchoredSheet('confirmed'), // Type inferred
 ///   child: Text('Confirm'),
 /// ),
 /// ```
@@ -503,12 +547,12 @@ Future<T?> anchoredSheet<T extends Object?>({
 ///
 /// ```dart
 /// class AppUtils {
-///   static void closeModal() {
-///     dismissAnchoredSheet(); // Works without context and without type!
+///   static void closeModal(BuildContext context) {
+///     context.popAnchoredSheet(); // Works with context!
 ///   }
 ///
-///   static void closeWithResult(String result) {
-///     dismissAnchoredSheet(result); // Type automatically inferred as String
+///   static void closeWithResult(BuildContext context, String result) {
+///     context.popAnchoredSheet(result); // Type automatically inferred as String
 ///   }
 /// }
 /// ```
@@ -534,7 +578,22 @@ Future<T?> anchoredSheet<T extends Object?>({
 ///   use cases
 /// * [showModalTopSheet] - For showing modals
 Future<void> dismissAnchoredSheet<T extends Object?>([T? result]) async {
-  // Try animated dismiss through current state first
+  // Try context-based dismissal through InheritedWidget first
+  try {
+    // Use the global navigator context if available
+    final context = WidgetsBinding.instance.rootElement;
+    if (context != null && context.mounted) {
+      final provider = ModalDismissProvider.maybeOf(context);
+      if (provider != null) {
+        provider.onDismiss(result);
+        return;
+      }
+    }
+  } catch (e) {
+    debugPrint('Warning: Could not dismiss through context provider: $e');
+  }
+
+  // Fallback: Try animated dismiss through current state
   final state = getCurrentState<_AnchoredSheetState>();
   if (state != null) {
     try {
@@ -547,9 +606,9 @@ Future<void> dismissAnchoredSheet<T extends Object?>([T? result]) async {
     }
   }
 
-  // Fallback to controller-based dismissal
-  final controller = getCurrentController<GenericModalController<T>>();
-  if (controller != null) {
+  // Final fallback: controller-based dismissal
+  final controller = getCurrentController<dynamic>();
+  if (controller != null && controller is GenericModalController) {
     try {
       controller.dismiss(result);
       return;
@@ -573,7 +632,7 @@ Future<void> dismissAnchoredSheet<T extends Object?>([T? result]) async {
 /// ```dart
 /// Widget build(BuildContext context) {
 ///   return ElevatedButton(
-///     onPressed: () => dismissAnchoredSheetWithContext(context, 'result'),
+///     onPressed: () => context.popAnchoredSheet('result'),
 ///     // Type inferred
 ///     child: Text('Close with Context'),
 ///   );
@@ -593,11 +652,11 @@ Future<void> dismissAnchoredSheet<T extends Object?>([T? result]) async {
 ///
 /// ## See Also
 ///
-/// * [dismissAnchoredSheet] - Simpler context-free dismissal (recommended)
+/// * [context.popAnchoredSheet] - Simpler context-based dismissal (recommended)
 Future<void> dismissAnchoredSheetWithContext<T extends Object?>(
   BuildContext context, [
   T? result,
 ]) async {
-  // Fallback to context-free dismissal since we're using static references
-  await dismissAnchoredSheet(result);
+  // Use the new context-based method
+  context.popAnchoredSheet(result);
 }

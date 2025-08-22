@@ -1,8 +1,49 @@
 import 'package:anchored_sheets/anchored_sheets.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+/// Application state model using Provider for state management
+class AppState extends ChangeNotifier {
+  String _selectedFilter = 'All';
+  String _selectedOption = 'None';
+  bool _notifications = true;
+  String _searchQuery = '';
+
+  // Getters
+  String get selectedFilter => _selectedFilter;
+  String get selectedOption => _selectedOption;
+  bool get notifications => _notifications;
+  String get searchQuery => _searchQuery;
+
+  // Methods to update state
+  void updateFilter(String filter) {
+    _selectedFilter = filter;
+    notifyListeners();
+  }
+
+  void updateOption(String option) {
+    _selectedOption = option;
+    notifyListeners();
+  }
+
+  void updateNotifications(bool enabled) {
+    _notifications = enabled;
+    notifyListeners();
+  }
+
+  void updateSearchQuery(String query) {
+    _searchQuery = query;
+    notifyListeners();
+  }
+}
 
 void main() {
-  runApp(const MyApp());
+  runApp(
+    ChangeNotifierProvider(
+      create: (context) => AppState(),
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -35,143 +76,144 @@ class _AnchoredSheetsDemoState extends State<AnchoredSheetsDemo> {
   final GlobalKey _userAvatarKey = GlobalKey();
   final GlobalKey _searchButtonKey = GlobalKey();
 
-  String _selectedFilter = 'All';
-  String _selectedOption = 'None';
-  bool _notifications = true;
-  String _searchQuery = '';
-
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: const Text('Anchored Sheets Demo'),
-        actions: [
-          // Search button that will anchor a search sheet
-          IconButton(
-            key: _searchButtonKey,
-            icon: const Icon(Icons.search),
-            onPressed: _showSearchSheet,
-          ),
-          // User avatar that will anchor a profile sheet
-          Padding(
-            padding: const EdgeInsets.only(right: 16.0),
-            child: GestureDetector(
-              key: _userAvatarKey,
-              onTap: _showProfileSheet,
-              child: CircleAvatar(
-                backgroundColor: Theme.of(context).colorScheme.primary,
-                child: const Icon(Icons.person, color: Colors.white),
+    return Consumer<AppState>(
+      builder: (context, appState, child) {
+        return Scaffold(
+          appBar: AppBar(
+            backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+            title: const Text('Anchored Sheets Demo'),
+            actions: [
+              // Search button that will anchor a search sheet
+              IconButton(
+                key: _searchButtonKey,
+                icon: const Icon(Icons.search),
+                onPressed: _showSearchSheet,
               ),
-            ),
-          ),
-        ],
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header section with action buttons
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                // Menu button that will anchor a dropdown
-                ElevatedButton.icon(
-                  key: _menuButtonKey,
-                  onPressed: _showMenuSheet,
-                  icon: const Icon(Icons.menu),
-                  label: const Text('Menu'),
+              // User avatar that will anchor a profile sheet
+              Padding(
+                padding: const EdgeInsets.only(right: 16.0),
+                child: GestureDetector(
+                  key: _userAvatarKey,
+                  onTap: _showProfileSheet,
+                  child: CircleAvatar(
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    child: const Icon(Icons.person, color: Colors.white),
+                  ),
                 ),
-                // Filter button that will anchor a filter panel
-                ElevatedButton.icon(
-                  key: _filterButtonKey,
-                  onPressed: _showFilterSheet,
-                  icon: const Icon(Icons.filter_list),
-                  label: Text('Filter: $_selectedFilter'),
+              ),
+            ],
+          ),
+          body: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header section with action buttons
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // Menu button that will anchor a dropdown
+                    ElevatedButton.icon(
+                      key: _menuButtonKey,
+                      onPressed: _showMenuSheet,
+                      icon: const Icon(Icons.menu),
+                      label: const Text('Menu'),
+                    ),
+                    // Filter button that will anchor a filter panel
+                    ElevatedButton.icon(
+                      key: _filterButtonKey,
+                      onPressed: _showFilterSheet,
+                      icon: const Icon(Icons.filter_list),
+                      label: Text('Filter: ${appState.selectedFilter}'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+
+                // Content area
+                const Text(
+                  'Anchored Sheets Examples',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 16),
+
+                Expanded(
+                  child: GridView.count(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 16,
+                    mainAxisSpacing: 16,
+                    children: [
+                      _buildDemoCard(
+                        'Basic Sheet',
+                        'Simple top modal sheet',
+                        Icons.article,
+                        () => _showBasicSheet(),
+                      ),
+                      _buildDemoCard(
+                        'Draggable Sheet',
+                        'Sheet with drag to dismiss',
+                        Icons.drag_handle,
+                        () => _showDraggableSheet(),
+                      ),
+                      _buildDemoCard(
+                        'Scrollable Sheet',
+                        'Large content with scroll',
+                        Icons.view_list,
+                        () => _showScrollableSheet(),
+                      ),
+                      _buildDemoCard(
+                        'Styled Sheet',
+                        'Custom styling & shape',
+                        Icons.palette,
+                        () => _showStyledSheet(),
+                      ),
+                      _buildDemoCard(
+                        'Form Sheet',
+                        'Interactive form example',
+                        Icons.edit,
+                        () => _showFormSheet(),
+                      ),
+                      _buildDemoCard(
+                        'Context-Free',
+                        'Dismiss without context',
+                        Icons.close,
+                        () => _showContextFreeSheet(),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Status section
+                const SizedBox(height: 16),
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Current State:',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        Text('Selected Option: ${appState.selectedOption}'),
+                        Text('Filter: ${appState.selectedFilter}'),
+                        Text(
+                          'Search: ${appState.searchQuery.isEmpty ? "None" : appState.searchQuery}',
+                        ),
+                        Text(
+                          'Notifications: ${appState.notifications ? "On" : "Off"}',
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ],
             ),
-            const SizedBox(height: 24),
-
-            // Content area
-            const Text(
-              'Anchored Sheets Examples',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-
-            Expanded(
-              child: GridView.count(
-                crossAxisCount: 2,
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
-                children: [
-                  _buildDemoCard(
-                    'Basic Sheet',
-                    'Simple top modal sheet',
-                    Icons.article,
-                    () => _showBasicSheet(),
-                  ),
-                  _buildDemoCard(
-                    'Draggable Sheet',
-                    'Sheet with drag to dismiss',
-                    Icons.drag_handle,
-                    () => _showDraggableSheet(),
-                  ),
-                  _buildDemoCard(
-                    'Scrollable Sheet',
-                    'Large content with scroll',
-                    Icons.view_list,
-                    () => _showScrollableSheet(),
-                  ),
-                  _buildDemoCard(
-                    'Styled Sheet',
-                    'Custom styling & shape',
-                    Icons.palette,
-                    () => _showStyledSheet(),
-                  ),
-                  _buildDemoCard(
-                    'Form Sheet',
-                    'Interactive form example',
-                    Icons.edit,
-                    () => _showFormSheet(),
-                  ),
-                  _buildDemoCard(
-                    'Context-Free',
-                    'Dismiss without context',
-                    Icons.close,
-                    () => _showContextFreeSheet(),
-                  ),
-                ],
-              ),
-            ),
-
-            // Status section
-            const SizedBox(height: 16),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Current State:',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    Text('Selected Option: $_selectedOption'),
-                    Text('Filter: $_selectedFilter'),
-                    Text(
-                      'Search: ${_searchQuery.isEmpty ? "None" : _searchQuery}',
-                    ),
-                    Text('Notifications: ${_notifications ? "On" : "Off"}'),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
@@ -234,7 +276,7 @@ class _AnchoredSheetsDemoState extends State<AnchoredSheetsDemo> {
                 ),
                 const SizedBox(height: 16),
                 ElevatedButton(
-                  onPressed: () => dismissAnchoredSheet(),
+                  onPressed: () => context.popAnchoredSheet(),
                   child: const Text('Close'),
                 ),
               ],
@@ -364,10 +406,9 @@ class _AnchoredSheetsDemoState extends State<AnchoredSheetsDemo> {
     );
 
     if (result != null) {
-      setState(() {
-        _selectedOption = result['option'] ?? _selectedOption;
-      });
       if (mounted) {
+        final appState = Provider.of<AppState>(context, listen: false);
+        appState.updateOption(result['option'] ?? appState.selectedOption);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Form submitted: ${result['option']}')),
         );
@@ -408,11 +449,6 @@ class _AnchoredSheetsDemoState extends State<AnchoredSheetsDemo> {
             ),
           ),
     );
-
-    // Demonstrate context-free dismissal
-    Future.delayed(const Duration(seconds: 3), () {
-      dismissAnchoredSheet('auto-dismissed'); // Type inferred as String
-    });
   }
 
   // Anchored menu sheet
@@ -437,9 +473,10 @@ class _AnchoredSheetsDemoState extends State<AnchoredSheetsDemo> {
     );
 
     if (result != null) {
-      setState(() {
-        _selectedOption = result;
-      });
+      if (mounted) {
+        final appState = Provider.of<AppState>(context, listen: false);
+        appState.updateOption(result);
+      }
     }
   }
 
@@ -448,41 +485,17 @@ class _AnchoredSheetsDemoState extends State<AnchoredSheetsDemo> {
       dense: true,
       leading: Icon(icon),
       title: Text(title),
-      onTap: () => dismissAnchoredSheet(title), // Type inferred as String
+      onTap: () => context.popAnchoredSheet(title), // Use Navigator.pop instead
     );
   }
 
   // Anchored filter sheet
   void _showFilterSheet() async {
-    final result = await anchoredSheet<String>(
+    await anchoredSheet<String>(
       context: context,
       anchorKey: _filterButtonKey,
       useSafeArea: true, // Ensure it doesn't overlap with system UI
-      builder:
-          (context) => Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildFilterItem('All'),
-              _buildFilterItem('Recent'),
-              _buildFilterItem('Favorites'),
-              _buildFilterItem('Archived'),
-            ],
-          ),
-    );
-
-    if (result != null) {
-      setState(() {
-        _selectedFilter = result;
-      });
-    }
-  }
-
-  Widget _buildFilterItem(String filter) {
-    return ListTile(
-      dense: true,
-      title: Text(filter),
-      trailing: _selectedFilter == filter ? const Icon(Icons.check) : null,
-      onTap: () => dismissAnchoredSheet(filter), // Type inferred as String
+      builder: (context) => _FilterSheetContent(),
     );
   }
 
@@ -508,9 +521,9 @@ class _AnchoredSheetsDemoState extends State<AnchoredSheetsDemo> {
                     border: OutlineInputBorder(),
                   ),
                   onSubmitted:
-                      (value) => dismissAnchoredSheet(
+                      (value) => context.popAnchoredSheet(
                         value,
-                      ), // Type inferred as String
+                      ), // Use Navigator.pop instead
                 ),
               ],
             ),
@@ -518,9 +531,10 @@ class _AnchoredSheetsDemoState extends State<AnchoredSheetsDemo> {
     );
 
     if (result != null && result.isNotEmpty) {
-      setState(() {
-        _searchQuery = result;
-      });
+      if (mounted) {
+        final appState = Provider.of<AppState>(context, listen: false);
+        appState.updateSearchQuery(result);
+      }
     }
   }
 
@@ -531,47 +545,51 @@ class _AnchoredSheetsDemoState extends State<AnchoredSheetsDemo> {
       anchorKey: _userAvatarKey,
       useSafeArea: true, // Prevent overlap with status bar
       builder:
-          (context) => Container(
-            constraints: const BoxConstraints(maxWidth: 250),
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const CircleAvatar(
-                  radius: 30,
-                  child: Icon(Icons.person, size: 30),
+          (context) => Consumer<AppState>(
+            builder: (context, appState, child) {
+              return Container(
+                constraints: const BoxConstraints(maxWidth: 250),
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const CircleAvatar(
+                      radius: 30,
+                      child: Icon(Icons.person, size: 30),
+                    ),
+                    const SizedBox(height: 12),
+                    const Text(
+                      'John Doe',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    const Text('john.doe@example.com'),
+                    const SizedBox(height: 16),
+                    SwitchListTile(
+                      title: const Text('Notifications'),
+                      value: appState.notifications,
+                      onChanged: (value) {
+                        appState.updateNotifications(value);
+                        context.popAnchoredSheet(value);
+                      },
+                    ),
+                    ListTile(
+                      leading: const Icon(Icons.logout),
+                      title: const Text('Sign Out'),
+                      onTap:
+                          () => context.popAnchoredSheet(
+                            false,
+                          ), // Use Navigator.pop instead
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 12),
-                const Text(
-                  'John Doe',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                const Text('john.doe@example.com'),
-                const SizedBox(height: 16),
-                SwitchListTile(
-                  title: const Text('Notifications'),
-                  value: _notifications,
-                  onChanged: (value) {
-                    setState(() {
-                      _notifications = value;
-                    });
-                    dismissAnchoredSheet(value); // Type inferred as bool
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(Icons.logout),
-                  title: const Text('Sign Out'),
-                  onTap:
-                      () =>
-                          dismissAnchoredSheet(false), // Type inferred as bool
-                ),
-              ],
-            ),
+              );
+            },
           ),
     );
 
     if (result != null) {
-      // Handle profile actions if needed
+      // Handle profile actions - notifications already updated via Provider
+      // No need to set state here since Provider handles it
     }
   }
 }
@@ -633,10 +651,7 @@ class _FormSheetContentState extends State<_FormSheetContent> {
               children: [
                 Expanded(
                   child: TextButton(
-                    onPressed:
-                        () => dismissAnchoredSheet(
-                          null,
-                        ), // Type inferred from context
+                    onPressed: () => context.popAnchoredSheet(null),
                     child: const Text('Cancel'),
                   ),
                 ),
@@ -647,8 +662,7 @@ class _FormSheetContentState extends State<_FormSheetContent> {
                       if (_formKey.currentState!.validate() &&
                           _selectedOption.isNotEmpty) {
                         _formKey.currentState!.save();
-                        dismissAnchoredSheet({
-                          // Type inferred as Map<String, dynamic>
+                        context.popAnchoredSheet({
                           'option': _selectedOption,
                           'text': _textInput,
                         });
@@ -661,6 +675,86 @@ class _FormSheetContentState extends State<_FormSheetContent> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _FilterSheetContent extends StatelessWidget {
+  const _FilterSheetContent();
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<AppState>(
+      builder: (context, appState, child) {
+        return Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Header
+              const Text(
+                'Filter Options',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+
+              // Filter options
+              ...['All', 'Recent', 'Favorites', 'Archived'].map(
+                (filter) => _FilterOption(
+                  title: filter,
+                  isSelected: appState.selectedFilter == filter,
+                  onTap: () => appState.updateFilter(filter),
+                ),
+              ),
+
+              // Action buttons
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// A reusable filter option widget following Flutter best practices
+class _FilterOption extends StatelessWidget {
+  const _FilterOption({
+    required this.title,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final String title;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: isSelected ? 2 : 0,
+      color: isSelected ? Theme.of(context).colorScheme.primaryContainer : null,
+      child: ListTile(
+        title: Text(
+          title,
+          style: TextStyle(
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+            color:
+                isSelected
+                    ? Theme.of(context).colorScheme.onPrimaryContainer
+                    : null,
+          ),
+        ),
+        trailing:
+            isSelected
+                ? Icon(
+                  Icons.check_circle,
+                  color: Theme.of(context).colorScheme.primary,
+                )
+                : null,
+        onTap: onTap,
       ),
     );
   }

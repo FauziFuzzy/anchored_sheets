@@ -38,7 +38,7 @@ void main() {
                           const Text('Test Sheet'),
                           ElevatedButton(
                             onPressed: () =>
-                                dismissAnchoredSheet('test_result'),
+                                context.popAnchoredSheet('test_result'),
                             child: const Text('Close'),
                           ),
                         ],

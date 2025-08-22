@@ -5,26 +5,46 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.1.1] - 2025-08-22
-
-### Changed
-- 📝 **Function naming consistency** - Updated `dismissTopModalSheet` to `dismissAnchoredSheet` throughout documentation
-- 🔧 **API alignment** - Function names now better align with package name for improved developer experience
+## [1.1.3] - 2025-08-22
 
 ### Fixed
-- 📖 **Documentation accuracy** - All code examples now use consistent function naming
-
-## [1.1.0] - 2025-08-22
+- **Type Safety**: Fixed `_TypeError` when casting between different `GenericModalController` types
+  - Resolved issue where `GenericModalController<String>` could not be cast to `GenericModalController<bool>?`
+  - Implemented type-safe checking in `getCurrentController()` and `getCurrentState()` methods
+  - Made controller dismissal work regardless of generic type parameters
+- **Context-based Dismissal**: Fixed `context.popAnchoredSheet()` not working properly
+  - Re-enabled fallback to `dismissAnchoredSheet()` when `ModalDismissProvider` is not found
+  - Improved dismissal reliability across different anchored sheet types
+- **Provider Integration**: Enhanced state management with Provider pattern
+  - Implemented real-time UI updates in anchored sheets
+  - Added `AppState` provider for centralized state management
+  - Filter sheet now updates UI immediately when selections change
 
 ### Added
-- 📝 **Comprehensive documentation** - Detailed README with examples and API reference
-- 🧪 **Widget testing support** - Complete test suite with helper functions
-- 🔧 **GitHub Actions CI/CD** - Automated testing and code quality checks
-- 📐 **Code formatting compliance** - 80-character line length standards
+- **Best Practices Example**: Comprehensive Provider-based state management implementation
+  - Reactive UI updates without waiting for sheet dismissal
+  - Proper separation of concerns between UI and business logic
+  - Material Design 3 integration with proper theming
 
-### Improved
-- 🎨 **Documentation clarity** - Enhanced code examples and usage patterns
-- 🏗️ **Project structure** - Better organized codebase with comprehensive comments
+### Technical Improvements
+- Type-safe controller storage and retrieval
+- Dynamic type checking to prevent runtime casting errors
+- Improved error handling and debugging messages
+- Better fallback mechanisms for dismissal operations
+
+## [1.1.2] - 2025-08-22
+
+### Changed
+- **BREAKING CHANGE**: Updated dismissal API to prioritize context-based approach
+  - `context.popAnchoredSheet()` is now the primary recommended method for dismissing sheets
+  - `dismissAnchoredSheet()` is kept for backward compatibility but no longer preferred
+  - Updated all examples and documentation to use the new pattern
+  - Improved fallback handling for dismissal methods
+
+### Updated
+- All example code now uses `context.popAnchoredSheet()`
+- Documentation updated to reflect the preferred dismissal approach
+- Test files updated to use the new API
 
 ## [1.0.0] - 2025-08-22
 
@@ -44,7 +64,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Features
 - **Core Functions:**
   - `anchoredSheet()` - Main function to show modal sheets
-  - `dismissAnchoredSheet()` - Context-free dismissal function
+  - `context.popAnchoredSheet()` - Context-free dismissal function
   - `dismissAnchoredSheetWithContext()` - Context-aware dismissal function
 
 - **Positioning Options:**
