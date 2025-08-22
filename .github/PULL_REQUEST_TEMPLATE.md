@@ -30,17 +30,6 @@ Related to #(issue number)
 - [ ] Tests pass locally (`flutter test`)
 - [ ] No new warnings or errors
 
-## Performance Impact
-
-- [ ] No performance impact
-- [ ] Performance improved
-
-## Breaking Changes
-
-- [ ] No breaking changes
-- [ ] Breaking changes documented below
-
-
 ## Checklist
 
 - [ ] Code follows project style guidelines
