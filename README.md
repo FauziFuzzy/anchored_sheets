@@ -505,13 +505,9 @@ anchoredSheet(
 );
 ```
 
-## 🤝 Contributing
+<!-- ## 🤝 Contributing
 
-Contributions are welcome! Please read our [Contributing Guide](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+Contributions are welcome! Please read our [Contributing Guide](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests. -->
 
 ## 🙏 Acknowledgments
 
@@ -521,9 +517,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📧 Support
 
-- 🐛 [File an issue](https://github.com/FauziFuzzy/anchored_sheets/issues)
+<!-- <!-- - 🐛 [File an issue](https://github.com/FauziFuzzy/anchored_sheets/issues) -->
 - 💬 [Start a discussion](https://github.com/FauziFuzzy/anchored_sheets/discussions)
-- 📖 [Read the docs](https://pub.dev/packages/anchored_sheets)
+- 📖 [Read the docs](https://pub.dev/packages/anchored_sheets) -->
 
 ---
 
