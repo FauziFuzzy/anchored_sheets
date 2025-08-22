@@ -14,22 +14,44 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Cache Flutter SDK
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ runner.tool_cache }}/flutter
+            ~/.flutter
+          key: flutter-${{ runner.os }}-3.35.1
+          restore-keys: |
+            flutter-${{ runner.os }}-
+
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
-      - run: flutter pub get
+        with:
+          flutter-version: '3.29.3'
+          channel: 'stable'
+        
+      - name: Cache pub packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pub-cache
+            .dart_tool
+          key: pub-packages-${{ runner.os }}-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            pub-packages-${{ runner.os }}-
+            
+      - name: Get dependencies
+        run: flutter pub get
           
       - name: Flutter Version
         run: flutter --version
 
       - name: Run Flutter Analyze
+        if: '!cancelled()'
         run: flutter analyze
 
       - name: Run custom lint
         run: dart run custom_lint
-
-      - name: Flutter analyze
-        if: '!cancelled()'
-        run: flutter analyze
 
       - name: Check Code Format
         if: '!cancelled()'
