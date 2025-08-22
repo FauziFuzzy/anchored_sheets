@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2025-08-22
+
+### Added
+- 📝 **Comprehensive documentation** - Detailed README with examples and API reference
+- 🧪 **Widget testing support** - Complete test suite with helper functions
+- 🔧 **GitHub Actions CI/CD** - Automated testing and code quality checks
+- 📐 **Code formatting compliance** - 80-character line length standards
+
+### Improved
+- 🎨 **Documentation clarity** - Enhanced code examples and usage patterns
+- 🏗️ **Project structure** - Better organized codebase with comprehensive comments
+
 ## [1.0.0] - 2025-08-22
 
 ### Added
