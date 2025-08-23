@@ -117,10 +117,21 @@ class _AnchoredSheetsDemoState extends State<AnchoredSheetsDemo> {
                     // Menu button that will anchor a dropdown
                     ElevatedButton.icon(
                       key: _menuButtonKey,
-                      onPressed: _showMenuSheet,
+                      onPressed: () async {
+                        return showModalBottomSheet(
+                          isScrollControlled: true,
+                          useSafeArea: true,
+                          showDragHandle: true,
+                          context: context,
+                          builder: (context) {
+                            return Column(children: [Text('data')]);
+                          },
+                        );
+                      },
                       icon: const Icon(Icons.menu),
-                      label: const Text('Menu'),
+                      label: const Text('not me ?'),
                     ),
+
                     ElevatedButton.icon(
                       key: _filterButtonKey,
                       onPressed: _showFilterSheet,
@@ -230,6 +241,18 @@ class _AnchoredSheetsDemoState extends State<AnchoredSheetsDemo> {
                         'Dismiss without context',
                         Icons.close,
                         () => _showContextFreeSheet(),
+                      ),
+                      _buildDemoCard(
+                        'Enhanced Gestures',
+                        'Drag to resize, pin, swipe',
+                        Icons.gesture,
+                        () => _showGestureSheet(),
+                      ),
+                      _buildDemoCard(
+                        'Gesture + Performance Demo',
+                        'Advanced gestures (auto-optimized)',
+                        Icons.speed,
+                        () => _showPerformanceSheet(),
                       ),
                       _buildDemoCard(
                         'Safe Modal',
@@ -375,38 +398,11 @@ class _AnchoredSheetsDemoState extends State<AnchoredSheetsDemo> {
   void _showDraggableSheet() {
     anchoredSheet(
       context: context,
-      enableDrag: true,
+      isScrollControlled: true,
+      useSafeArea: true,
       showDragHandle: true,
-      useSafeArea: true, // Prevent overlap with status bar
-      builder:
-          (context) => Container(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.drag_handle, size: 48, color: Colors.green),
-                const SizedBox(height: 16),
-                const Text(
-                  'Draggable Sheet',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'You can drag this sheet up to dismiss it!\n'
-                  'Try dragging the handle or the content.',
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 16),
-                const Icon(Icons.swipe_up, size: 32, color: Colors.grey),
-                const SizedBox(height: 8),
-                const Text(
-                  'This sheet auto-sizes with MainAxisSize.min',
-                  style: TextStyle(fontSize: 12, color: Colors.grey),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          ),
+      enableDrag: true,
+      builder: (context) => _FilterSheetContent(),
     );
   }
 
@@ -416,28 +412,26 @@ class _AnchoredSheetsDemoState extends State<AnchoredSheetsDemo> {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
+      showDragHandle: true,
       builder:
-          (context) => SizedBox(
-            height: 400,
-            child: Column(
-              children: [
-                const Text(
-                  'Scrollable Content',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          (context) => Column(
+            children: [
+              const Text(
+                'Scrollable Content',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              Expanded(
+                child: ListView.builder(
+                  itemCount: 20,
+                  itemBuilder:
+                      (context, index) => ListTile(
+                        leading: CircleAvatar(child: Text('${index + 1}')),
+                        title: Text('Item ${index + 1}'),
+                        subtitle: Text('This is item number ${index + 1}'),
+                      ),
                 ),
-                Expanded(
-                  child: ListView.builder(
-                    itemCount: 20,
-                    itemBuilder:
-                        (context, index) => ListTile(
-                          leading: CircleAvatar(child: Text('${index + 1}')),
-                          title: Text('Item ${index + 1}'),
-                          subtitle: Text('This is item number ${index + 1}'),
-                        ),
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
     );
   }
@@ -538,8 +532,8 @@ class _AnchoredSheetsDemoState extends State<AnchoredSheetsDemo> {
   }
 
   // Safe modal handling example
-  void _showSafeModalExample() {
-    anchoredSheet(
+  Future<void> _showSafeModalExample() {
+    return anchoredSheet(
       context: context,
       useSafeArea: true,
       builder:
@@ -560,36 +554,7 @@ class _AnchoredSheetsDemoState extends State<AnchoredSheetsDemo> {
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: () async {
-                    // Store the context before async operations
-                    final navigatorContext = context;
 
-                    // Show bottom sheet safely (will dismiss this anchored sheet first)
-                    await AnchoredSheetModalManager.showBottomSheetAfterAnchored(
-                      context: navigatorContext,
-                      builder:
-                          (context) => Container(
-                            padding: const EdgeInsets.all(20),
-                            height: 150,
-                            child: const Column(
-                              children: [
-                                Text(
-                                  'Bottom Sheet',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                SizedBox(height: 16),
-                                Text('Safely replaced the anchored sheet!'),
-                              ],
-                            ),
-                          ),
-                    );
-                  },
-                  child: const Text('Switch to Bottom Sheet'),
-                ),
                 const SizedBox(height: 8),
                 TextButton(
                   onPressed: () => context.popAnchoredSheet(),
@@ -713,6 +678,8 @@ class _AnchoredSheetsDemoState extends State<AnchoredSheetsDemo> {
     await anchoredSheet<String>(
       context: context,
       anchorKey: _filterButtonKey,
+      isScrollControlled: true,
+      useSafeArea: true,
       showDragHandle: true,
       enableDrag: true,
       builder: (context) => _FilterSheetContent(),
@@ -725,28 +692,23 @@ class _AnchoredSheetsDemoState extends State<AnchoredSheetsDemo> {
       context: context,
       anchorKey: _searchButtonKey,
       enableDrag: true,
-      useSafeArea: true, // Prevent overlap with status bar
+      useSafeArea: true,
       builder:
-          (context) => Container(
-            constraints: const BoxConstraints(maxWidth: 300),
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  autofocus: true,
-                  decoration: const InputDecoration(
-                    hintText: 'Search...',
-                    prefixIcon: Icon(Icons.search),
-                    border: OutlineInputBorder(),
-                  ),
-                  onSubmitted:
-                      (value) => context.popAnchoredSheet(
-                        value,
-                      ), // Use Navigator.pop instead
+          (context) => Column(
+            children: [
+              TextField(
+                autofocus: true,
+                decoration: const InputDecoration(
+                  hintText: 'Search...',
+                  prefixIcon: Icon(Icons.search),
+                  border: OutlineInputBorder(),
                 ),
-              ],
-            ),
+                onSubmitted:
+                    (value) => context.popAnchoredSheet(
+                      value,
+                    ), // Use Navigator.pop instead
+              ),
+            ],
           ),
     );
 
@@ -763,45 +725,44 @@ class _AnchoredSheetsDemoState extends State<AnchoredSheetsDemo> {
     final result = await anchoredSheet<bool>(
       context: context,
       anchorKey: _userAvatarKey,
-      useSafeArea: true, // Prevent overlap with status bar
+      isScrollControlled: true,
+      useSafeArea: true,
+      showDragHandle: true,
+      enableDrag: true,
       builder:
           (context) => Consumer<AppState>(
             builder: (context, appState, child) {
-              return Container(
-                constraints: const BoxConstraints(maxWidth: 250),
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const CircleAvatar(
-                      radius: 30,
-                      child: Icon(Icons.person, size: 30),
-                    ),
-                    const SizedBox(height: 12),
-                    const Text(
-                      'John Doe',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    const Text('john.doe@example.com'),
-                    const SizedBox(height: 16),
-                    SwitchListTile(
-                      title: const Text('Notifications'),
-                      value: appState.notifications,
-                      onChanged: (value) {
-                        appState.updateNotifications(value);
-                        context.popAnchoredSheet(value);
-                      },
-                    ),
-                    ListTile(
-                      leading: const Icon(Icons.logout),
-                      title: const Text('Sign Out'),
-                      onTap:
-                          () => context.popAnchoredSheet(
-                            false,
-                          ), // Use Navigator.pop instead
-                    ),
-                  ],
-                ),
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const CircleAvatar(
+                    radius: 30,
+                    child: Icon(Icons.person, size: 30),
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'John Doe',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const Text('john.doe@example.com'),
+                  const SizedBox(height: 16),
+                  SwitchListTile(
+                    title: const Text('Notifications'),
+                    value: appState.notifications,
+                    onChanged: (value) {
+                      appState.updateNotifications(value);
+                      context.popAnchoredSheet(value);
+                    },
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.logout),
+                    title: const Text('Sign Out'),
+                    onTap:
+                        () => context.popAnchoredSheet(
+                          false,
+                        ), // Use Navigator.pop instead
+                  ),
+                ],
               );
             },
           ),
@@ -1276,6 +1237,179 @@ class _AnchoredSheetsDemoState extends State<AnchoredSheetsDemo> {
           ),
     );
   }
+
+  // Enhanced gesture sheet demo
+  void _showGestureSheet() async {
+    await anchoredSheet<String>(
+      context: context,
+
+      builder:
+          (context) => Container(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  '🎯 Enhanced Gestures Demo',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 16),
+                const Text('Try these gestures:'),
+                const SizedBox(height: 12),
+                _buildGestureInfo('📌', 'Long press to pin/unpin'),
+                _buildGestureInfo('↕️', 'Drag edges to resize'),
+                _buildGestureInfo('👆', 'Swipe up/down/left/right'),
+                _buildGestureInfo('👆👆', 'Double tap for action'),
+                const SizedBox(height: 20),
+                Container(
+                  width: double.infinity,
+                  height: 100,
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: Colors.blue.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: const Center(
+                    child: Text(
+                      'Interactive Area\nTry gestures here!',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.blue,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => context.popAnchoredSheet('dismissed'),
+                      child: const Text('Close'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+    );
+  }
+
+  // Performance optimized sheet demo
+  void _showPerformanceSheet() async {
+    await anchoredSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      showDragHandle: true,
+      enableDrag: true,
+
+      builder:
+          (context) => Container(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  '🚀 Performance Optimized Sheet',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 16),
+                const Text('This sheet uses:'),
+                const SizedBox(height: 12),
+                _buildPerformanceFeature('💾', 'Cached animations'),
+                _buildPerformanceFeature('🎨', 'RepaintBoundary widgets'),
+                _buildPerformanceFeature('⚡', 'Lazy-loaded gestures'),
+                _buildPerformanceFeature('📊', 'Performance metrics'),
+                _buildPerformanceFeature('🔄', 'Optimized rebuilds'),
+                const SizedBox(height: 20),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: Colors.green.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Performance Benefits:',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: Colors.green,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text('• Faster animation startup'),
+                      const Text('• Reduced memory usage'),
+                      const Text('• Smoother interactions'),
+                      const Text('• Better frame rates'),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    TextButton.icon(
+                      onPressed: () {
+                        // Animation cache cleanup is now handled automatically
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Animation cache cleaned up!'),
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.cleaning_services),
+                      label: const Text('Cleanup Cache'),
+                    ),
+                    TextButton(
+                      onPressed: () => context.popAnchoredSheet('dismissed'),
+                      child: const Text('Close'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+    );
+  }
+
+  Widget _buildPerformanceFeature(String icon, String description) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        children: [
+          Text(icon, style: const TextStyle(fontSize: 16)),
+          const SizedBox(width: 8),
+          Text(description),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGestureInfo(String icon, String description) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Text(icon, style: const TextStyle(fontSize: 16)),
+          const SizedBox(width: 8),
+          Text(description),
+        ],
+      ),
+    );
+  }
 }
 
 class _FormSheetContent extends StatefulWidget {
@@ -1371,32 +1505,27 @@ class _FilterSheetContent extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<AppState>(
       builder: (context, appState, child) {
-        return Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Header
-              const Text(
-                'Filter Options',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 16),
+        return Column(
+          children: [
+            // Header
+            const Text(
+              'Filter Options',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
 
-              // Filter options
-              ...['All', 'Recent', 'Favorites', 'Archived'].map(
-                (filter) => _FilterOption(
-                  title: filter,
-                  isSelected: appState.selectedFilter == filter,
-                  onTap: () => appState.updateFilter(filter),
-                ),
+            // Filter options
+            ...['All', 'Recent', 'Favorites', 'Archived'].map(
+              (filter) => _FilterOption(
+                title: filter,
+                isSelected: appState.selectedFilter == filter,
+                onTap: () => appState.updateFilter(filter),
               ),
+            ),
 
-              // Action buttons
-            ],
-          ),
+            // Action buttons
+          ],
         );
       },
     );

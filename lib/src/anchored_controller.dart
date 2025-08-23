@@ -2,81 +2,155 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-/// Utility functions for managing static modal controller references
+
+/// Simple static tracking for duplicate prevention
 ///
-/// Provides a standardized way to handle global modal state for
-/// context-free dismissal functionality.
+/// This class provides minimal global state tracking specifically for preventing
+/// duplicate modal sheets when users click buttons multiple times quickly.
+/// It maintains a clean architecture by only tracking what's necessary.
+///
+/// ## Features
+///
+/// * 🚫 **Duplicate prevention** - Prevents multiple sheets from same anchor
+/// * 🔄 **Toggle behavior** - Second click on same button dismisses sheet
+/// * 🧹 **Auto-cleanup** - Automatically clears when controller is disposed
+/// * 📦 **Minimal footprint** - Only tracks active controller and anchor key
+///
+/// ## Usage
+///
+/// ```dart
+/// // Check for duplicates before creating new sheet
+/// if (ActiveSheetTracker.hasActive &&
+///     anchorKey == ActiveSheetTracker.currentAnchorKey) {
+///   ActiveSheetTracker.currentController?.dismiss();
+///   return; // Don't create duplicate
+/// }
+///
+/// // Track new active sheet
+/// ActiveSheetTracker.setActive(controller, anchorKey);
+/// ```
+///
+/// ## Automatic Cleanup
+///
+/// The tracker automatically clears itself when controllers are disposed,
+/// preventing memory leaks and stale references.
+class ActiveSheetTracker {
+  /// Private storage for the currently active controller
+  ///
+  /// This is the controller for the most recently opened anchored sheet.
+  /// It's cleared automatically when the controller is disposed.
+  static ModalController<dynamic>? _currentController;
 
-// Private variables for storing global modal state
-dynamic _currentController;
-dynamic _currentState;
-GlobalKey? _currentAnchorKey;
+  /// Private storage for the anchor key of the active sheet
+  ///
+  /// This tracks which UI element (button, etc.) opened the current sheet.
+  /// Used for duplicate prevention and toggle behavior.
+  static GlobalKey? _currentAnchorKey;
 
-/// Sets the current active controller
-void setCurrentController(dynamic controller, [GlobalKey? anchorKey]) {
-  _currentController = controller;
-  _currentAnchorKey = anchorKey;
-}
-
-/// Sets the current active state
-void setCurrentState(dynamic state) {
-  _currentState = state;
-}
-
-/// Gets the current active controller
-T? getCurrentController<T>() {
-  if (_currentController is T) {
-    return _currentController as T;
+  /// Sets the currently active sheet controller and anchor key
+  ///
+  /// This should be called when a new anchored sheet is created to enable
+  /// duplicate prevention and toggle behavior for subsequent clicks.
+  ///
+  /// Parameters:
+  /// * [controller] - The modal controller for the new active sheet
+  /// * [anchorKey] - Optional key identifying the UI element that opened the sheet
+  ///
+  /// ```dart
+  /// final controller = ModalController<String>();
+  /// ActiveSheetTracker.setActive(controller, myButtonKey);
+  /// ```
+  static void setActive(
+    ModalController<dynamic> controller,
+    GlobalKey? anchorKey,
+  ) {
+    _currentController = controller;
+    _currentAnchorKey = anchorKey;
   }
-  return null;
-}
 
-/// Gets the current anchor key
-GlobalKey? getCurrentAnchorKey() {
-  return _currentAnchorKey;
-}
+  /// Gets the currently active modal controller
+  ///
+  /// Returns null if no sheet is currently active or if the controller
+  /// has been disposed. Use [hasActive] to check before accessing.
+  ///
+  /// ```dart
+  /// if (ActiveSheetTracker.hasActive) {
+  ///   ActiveSheetTracker.currentController?.dismiss('result');
+  /// }
+  /// ```
+  static ModalController<dynamic>? get currentController => _currentController;
 
-/// Gets the current active state
-T? getCurrentState<T>() {
-  if (_currentState is T) {
-    return _currentState as T;
+  /// Gets the anchor key for the currently active sheet
+  ///
+  /// Returns null if no sheet is active or if no anchor key was provided
+  /// when the sheet was created. Used for duplicate prevention logic.
+  ///
+  /// ```dart
+  /// if (myButtonKey == ActiveSheetTracker.currentAnchorKey) {
+  ///   // Same button clicked - toggle behavior
+  /// }
+  /// ```
+  static GlobalKey? get currentAnchorKey => _currentAnchorKey;
+
+  /// Clears all tracking state
+  ///
+  /// This is called automatically when controllers are disposed, but can
+  /// also be called manually if needed. Generally not needed in normal usage.
+  ///
+  /// ```dart
+  /// ActiveSheetTracker.clear(); // Manual cleanup
+  /// ```
+  static void clear() {
+    _currentController = null;
+    _currentAnchorKey = null;
   }
-  return null;
+
+  /// Checks if there is currently an active sheet
+  ///
+  /// Returns true if there is an active controller that hasn't been disposed.
+  /// This is the recommended way to check before accessing the controller.
+  ///
+  /// ```dart
+  /// if (ActiveSheetTracker.hasActive) {
+  ///   // Safe to access currentController and currentAnchorKey
+  ///   final controller = ActiveSheetTracker.currentController;
+  /// }
+  /// ```
+  static bool get hasActive =>
+      _currentController != null && !_currentController!.isDisposed;
 }
 
-/// Clears the controller reference
-void clearController() {
-  _currentController = null;
-  _currentAnchorKey = null;
-}
-
-/// Clears the state reference
-void clearState() {
-  _currentState = null;
-}
-
-/// Clears all references
-void clearAll() {
-  _currentController = null;
-  _currentState = null;
-  _currentAnchorKey = null;
-}
-
-/// Generic modal controller for managing completion state
-class GenericModalController<T> {
-  final VoidCallback? onDismiss;
-  final Completer<T?> _completer = Completer();
-
-  GenericModalController({this.onDismiss});
+/// Simple modal controller with setState-based state management
+class ModalController<T> {
+  final Completer<T?> _completer = Completer<T?>();
+  bool _isDisposed = false;
+  VoidCallback? _onStateChanged;
 
   Future<T?> get future => _completer.future;
+  bool get isCompleted => _completer.isCompleted;
+  bool get isDisposed => _isDisposed;
+
+  /// Sets the callback for state changes (typically setState from a widget)
+  void setStateCallback(VoidCallback? callback) {
+    _onStateChanged = callback;
+  }
 
   void dismiss([T? result]) {
-    if (!_completer.isCompleted) {
+    if (!_completer.isCompleted && !_isDisposed) {
       _completer.complete(result);
-      onDismiss?.call();
+      _onStateChanged?.call(); // Trigger setState instead of notifyListeners
     }
   }
 
-  bool get isCompleted => _completer.isCompleted;
+  void dispose() {
+    _isDisposed = true;
+    if (!_completer.isCompleted) {
+      _completer.complete(null);
+    }
+    // Clear from tracker if this is the active controller
+    if (ActiveSheetTracker._currentController == this) {
+      ActiveSheetTracker.clear();
+    }
+    _onStateChanged = null;
+  }
 }

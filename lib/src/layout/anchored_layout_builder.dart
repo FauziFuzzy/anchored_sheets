@@ -93,9 +93,10 @@ Widget buildModalContent({
   ShapeBorder? shape,
   BorderRadius? borderRadius,
   Clip? clipBehavior,
-  BoxConstraints? constraints,
   bool useSafeArea = false,
   bool showDragHandle = false,
+  bool isScrollControlled = false,
+  bool hasAnchorKey = false,
   VoidCallback? onDragHandleTap,
   ValueChanged<bool>? onDragHandleHover,
   Set<WidgetState>? dragHandleStates,
@@ -150,19 +151,12 @@ Widget buildModalContent({
 
   if (useSafeArea) {
     content = SafeArea(
-      top: false,
+      // Smart SafeArea logic:
+      top: !hasAnchorKey && !isScrollControlled,
       left: false,
       right: false,
-      bottom: true,
+      bottom: isScrollControlled,
       child: content,
-    );
-  }
-
-  if (constraints != null) {
-    content = Align(
-      alignment: Alignment.topCenter,
-      heightFactor: 1.0,
-      child: ConstrainedBox(constraints: constraints, child: content),
     );
   }
 

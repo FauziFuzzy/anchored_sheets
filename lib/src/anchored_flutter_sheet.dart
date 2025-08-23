@@ -142,7 +142,7 @@ class AnchoredSheet extends StatefulWidget {
   final Size? dragHandleSize;
   final GlobalKey? anchorKey;
   final double? topOffset;
-  final GenericModalController<dynamic>? controller;
+  final ModalController<dynamic>? controller;
   final VoidCallback onClosing;
   final bool useSafeArea;
 
@@ -176,180 +176,110 @@ class AnchoredSheet extends StatefulWidget {
   State<AnchoredSheet> createState() => _AnchoredSheetState();
 }
 
-class _AnchoredSheetState extends State<AnchoredSheet>
-    with SingleTickerProviderStateMixin
-    implements ModalAnimation, DragDismiss, AnchoredSheetModalManager {
+class _AnchoredSheetState extends AnchoredSheetState<AnchoredSheet> {
   final GlobalKey _childKey = GlobalKey(
     debugLabel: 'AnchoredSheet child',
   );
 
-  // ModalAnimationMixin implementation
-  @override
-  late AnimationController animationController;
-  @override
-  late Animation<double> slideAnimation;
-  @override
-  late Animation<double> fadeAnimation;
+  bool get dismissUnderway => controller.status == AnimationStatus.reverse;
 
-  @override
-  Duration get enterDuration => const Duration(milliseconds: 250);
-  @override
-  Duration get exitDuration => const Duration(milliseconds: 200);
-  @override
-  Curve get animationCurve => Curves.easeOutCubic;
-
-  @override
-  bool get dismissUnderway =>
-      animationController.status == AnimationStatus.reverse;
-
-  // DragDismissMixin implementation
-  @override
-  double get minFlingVelocity => 700.0;
-  @override
-  double get closeThreshold => 0.5;
-  @override
-  Set<WidgetState> dragHandleStates = <WidgetState>{};
-
-  @override
-  AnimationController get dragAnimationController => animationController;
-  @override
-  double get dragTargetHeight => _childHeight;
-  @override
-  VoidCallback get onDragDismiss => widget.onClosing;
-  @override
-  void setStateCallback(VoidCallback callback) => setState(callback);
-
-  @override
-  void onDragStart(DragStartDetails details) {}
-  @override
-  void onDragEnd(DragEndDetails details, {required bool isClosing}) {}
-
-  double get _childHeight {
-    final renderBox =
-        _childKey.currentContext?.findRenderObject() as RenderBox?;
-    if (renderBox != null && renderBox.hasSize) {
-      return renderBox.size.height;
-    }
-    return 200.0;
-  }
+  double? _cachedTopOffset;
+  double? _cachedModalHeight;
 
   @override
   void initState() {
     super.initState();
-    setCurrentState(this);
-    setupAnimations();
-    showModal();
+    // Set setState callback for controller updates
+    widget.controller?.setStateCallback(() {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    // Calculate and cache context-dependent values
+    _cachedTopOffset = calculateTopOffset(
+      anchorKey: widget.anchorKey,
+      topOffset: widget.topOffset,
+      context: context,
+      respectStatusBar: true,
+    );
+
+    // Cache expensive build operations
+    _updateCachedValues();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) animateIn();
+    });
+  }
+
+  @override
+  void didUpdateWidget(AnchoredSheet oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    bool needsRecache = false;
+
+    // Recalculate top offset if anchor key or top offset changed
+    if (oldWidget.anchorKey != widget.anchorKey ||
+        oldWidget.topOffset != widget.topOffset) {
+      _cachedTopOffset = calculateTopOffset(
+        anchorKey: widget.anchorKey,
+        topOffset: widget.topOffset,
+        context: context,
+        respectStatusBar: true,
+      );
+      needsRecache = true;
+    }
+
+    // Check if any properties affecting cached components changed
+    if (oldWidget.isScrollControlled != widget.isScrollControlled ||
+        oldWidget.scrollControlDisabledMaxHeightRatio !=
+            widget.scrollControlDisabledMaxHeightRatio ||
+        oldWidget.backgroundColor != widget.backgroundColor ||
+        oldWidget.shadowColor != widget.shadowColor ||
+        oldWidget.elevation != widget.elevation ||
+        oldWidget.shape != widget.shape ||
+        oldWidget.borderRadius != widget.borderRadius ||
+        oldWidget.clipBehavior != widget.clipBehavior ||
+        oldWidget.constraints != widget.constraints ||
+        oldWidget.useSafeArea != widget.useSafeArea ||
+        oldWidget.showDragHandle != widget.showDragHandle ||
+        oldWidget.dragHandleColor != widget.dragHandleColor ||
+        oldWidget.dragHandleSize != widget.dragHandleSize ||
+        oldWidget.enableDrag != widget.enableDrag ||
+        needsRecache) {
+      _updateCachedValues();
+    }
   }
 
   @override
   void dispose() {
-    clearState();
-    disposeAnimations();
+    // Clear setState callback to prevent memory leaks
+    widget.controller?.setStateCallback(null);
     super.dispose();
   }
 
-  // ModalAnimationMixin methods
-  @override
-  void setupAnimations() {
-    animationController = AnimationController(
-      duration: enterDuration,
-      reverseDuration: exitDuration,
-      debugLabel: 'ModalAnimation',
-      vsync: this,
-    );
-
-    slideAnimation = Tween<double>(
-      begin: -0.01, // Start above screen
-      end: 0.0, // End at final position
-    ).animate(
-      CurvedAnimation(parent: animationController, curve: animationCurve),
-    );
-
-    fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: animationController, curve: Curves.easeOut),
-    );
-  }
-
-  @override
-  void showModal() {
-    animationController.forward();
-  }
-
-  @override
   Future<void> dismissModal() async {
-    await animationController.reverse();
+    await animateOut();
   }
 
-  @override
-  void disposeAnimations() {
-    animationController.dispose();
-  }
+  /// Update cached values for expensive build operations
+  void _updateCachedValues() {
+    if (_cachedTopOffset == null) return; // Not ready yet
 
-  // DragDismissMixin methods
-  @override
-  void handleDragStart(DragStartDetails details) {
-    setStateCallback(() {
-      dragHandleStates.add(WidgetState.dragged);
-    });
-    onDragStart(details);
-  }
+    final screenHeight = MediaQuery.of(context).size.height;
+    final calculatedTopOffset = _cachedTopOffset!;
+    final availableHeight = screenHeight - calculatedTopOffset;
 
-  @override
-  void handleDragUpdate(DragUpdateDetails details) {
-    if (dragAnimationController.status == AnimationStatus.reverse) return;
-
-    // For top modals, positive delta moves up (dismiss)
-    final dragHeight = dragTargetHeight > 0 ? dragTargetHeight : 200.0;
-    dragAnimationController.value += details.primaryDelta! / dragHeight;
-  }
-
-  @override
-  void handleDragEnd(DragEndDetails details) {
-    if (dragAnimationController.status == AnimationStatus.reverse) return;
-
-    setStateCallback(() {
-      dragHandleStates.remove(WidgetState.dragged);
-    });
-
-    var isClosing = false;
-
-    // Check for fling velocity (negative = upward = dismiss for top modals)
-    if (details.velocity.pixelsPerSecond.dy < -minFlingVelocity) {
-      final flingVelocity =
-          details.velocity.pixelsPerSecond.dy / dragTargetHeight;
-      if (dragAnimationController.value < 1.0) {
-        dragAnimationController.fling(velocity: flingVelocity);
-      }
-      if (flingVelocity < 0.0) {
-        isClosing = true;
-      }
-    } else if (dragAnimationController.value > closeThreshold) {
-      if (dragAnimationController.value < 1.0) {
-        dragAnimationController.fling(velocity: 1.0);
-      }
-      isClosing = true;
-    } else {
-      dragAnimationController.reverse();
-    }
-
-    onDragEnd(details, isClosing: isClosing);
-
-    if (isClosing) {
-      onDragDismiss();
-    }
-  }
-
-  @override
-  void handleDragHandleHover({required bool hovering}) {
-    if (hovering != dragHandleStates.contains(WidgetState.hovered)) {
-      setStateCallback(() {
-        if (hovering) {
-          dragHandleStates.add(WidgetState.hovered);
-        } else {
-          dragHandleStates.remove(WidgetState.hovered);
-        }
-      });
-    }
+    // Cache modal height calculation
+    _cachedModalHeight = calculateModalHeight(
+      availableHeight: availableHeight,
+      isScrollControlled: widget.isScrollControlled,
+      scrollControlDisabledMaxHeightRatio:
+          widget.scrollControlDisabledMaxHeightRatio,
+    );
   }
 
   Future<void> _dismiss<T extends Object?>([T? result]) async {
@@ -359,21 +289,11 @@ class _AnchoredSheetState extends State<AnchoredSheet>
 
   @override
   Widget build(BuildContext context) {
-    final screenHeight = MediaQuery.of(context).size.height;
-    final calculatedTopOffset = calculateTopOffset(
-      anchorKey: widget.anchorKey,
-      topOffset: widget.topOffset,
-      context: context,
-      respectStatusBar: true,
-    );
-    final availableHeight = screenHeight - calculatedTopOffset;
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
+    final calculatedTopOffset = _cachedTopOffset ?? 0.0;
 
-    final explicitModalHeight = calculateModalHeight(
-      availableHeight: availableHeight,
-      isScrollControlled: widget.isScrollControlled,
-      scrollControlDisabledMaxHeightRatio:
-          widget.scrollControlDisabledMaxHeightRatio,
-    );
+    // Use cached modal height for better performance
+    final explicitModalHeight = _cachedModalHeight ?? 200.0;
 
     final theme = Theme.of(context).bottomSheetTheme;
     final modalContent = buildModalContent(
@@ -386,28 +306,26 @@ class _AnchoredSheetState extends State<AnchoredSheet>
       shape: widget.shape,
       borderRadius: widget.borderRadius,
       clipBehavior: widget.clipBehavior,
-      constraints: widget.constraints,
       useSafeArea: widget.useSafeArea,
+      isScrollControlled: widget.isScrollControlled,
+      hasAnchorKey: widget.anchorKey != null,
       showDragHandle: widget.showDragHandle ?? false,
       onDragHandleTap: widget.onClosing,
-      onDragHandleHover: (hovering) =>
-          handleDragHandleHover(hovering: hovering),
-      dragHandleStates: dragHandleStates,
+      onDragHandleHover: null,
+      dragHandleStates: const <WidgetState>{},
       dragHandleColor: widget.dragHandleColor,
       dragHandleSize: widget.dragHandleSize,
     );
 
     final gestureDetector = widget.enableDrag
-        ? forAnchoredSheet(
-            onDragStart: handleDragStart,
-            onDragUpdate: handleDragUpdate,
-            onDragEnd: handleDragEnd,
+        ? DraggableDismissible(
+            onDismiss: widget.onClosing,
             child: modalContent,
           )
         : modalContent;
 
-    return AnimatedBuilder(
-      animation: animationController,
+    final result = AnimatedBuilder(
+      animation: controller,
       builder: (context, child) => Stack(
         children: [
           buildClickThroughArea(calculatedTopOffset),
@@ -431,6 +349,8 @@ class _AnchoredSheetState extends State<AnchoredSheet>
         ],
       ),
     );
+
+    return result;
   }
 }
 
@@ -558,34 +478,31 @@ Future<T?> anchoredSheet<T extends Object?>({
   bool dismissOtherModals = false,
   bool replaceSheet = true, // Default to true for automatic replacement
 }) async {
-  // Check if there's an existing sheet
-  final currentController = getCurrentController<dynamic>();
-  if (currentController != null) {
-    final currentAnchorKey = getCurrentAnchorKey();
+  // Check if there's an existing sheet using the tracker
+  if (ActiveSheetTracker.hasActive) {
+    final currentController = ActiveSheetTracker.currentController;
+    final currentAnchorKey = ActiveSheetTracker.currentAnchorKey;
 
     // Check if this is the same anchor (prevent duplicate)
     if (anchorKey != null &&
         anchorKey == currentAnchorKey &&
         toggleOnDuplicate) {
       // Same anchor key - dismiss instead of replace
-      await dismissAnchoredSheet();
+      currentController?.dismiss();
       return null;
     }
 
-    // For non-anchored sheets, check if calling from same context/button
-    // This could be enhanced further with additional context tracking
-
     if (replaceSheet) {
       // Automatic replacement - dismiss current and open new
-      await dismissAnchoredSheet();
-      // Minimal delay only when needed for smooth transition
-      await Future<void>.delayed(const Duration(milliseconds: 16)); // One frame
+      currentController?.dismiss();
+      // Minimal delay for smooth transition
+      await Future<void>.delayed(const Duration(milliseconds: 16));
       // Check if context is still mounted after the delay
       if (!context.mounted) return null;
     } else {
       // Legacy behavior when replaceSheet = false
       if (toggleOnDuplicate) {
-        await dismissAnchoredSheet();
+        currentController?.dismiss();
       }
       return null;
     }
@@ -593,55 +510,63 @@ Future<T?> anchoredSheet<T extends Object?>({
 
   // Handle dismissing other modals first
   if (dismissOtherModals) {
-    await AnchoredSheetModalManager.dismissOtherModals(context);
+    await ModalManager.dismissOtherModals(context);
   }
 
-  final controller = GenericModalController<T>();
-  setCurrentController(controller, anchorKey);
+  final controller = ModalController<T>();
+  ActiveSheetTracker.setActive(controller, anchorKey);
 
   final overlayEntry = OverlayEntry(
-    builder: (context) => AnchoredSheet(
-      controller: controller,
-      onClosing: () {
+    builder: (context) => ModalManager(
+      onDismissRequest: () {
         if (!controller.isCompleted) {
           controller.dismiss();
         }
       },
-      backgroundColor: backgroundColor,
-      shadowColor: shadowColor,
-      elevation: elevation,
-      shape: shape,
-      clipBehavior: clipBehavior,
-      constraints: constraints,
-      borderRadius: borderRadius,
-      overlayColor: overlayColor,
-      animationDuration: animationDuration,
-      isDismissible: isDismissible,
-      isScrollControlled: isScrollControlled,
-      scrollControlDisabledMaxHeightRatio: scrollControlDisabledMaxHeightRatio,
-      enableDrag: enableDrag,
-      showDragHandle: showDragHandle,
-      dragHandleColor: dragHandleColor,
-      dragHandleSize: dragHandleSize,
-      anchorKey: anchorKey,
-      topOffset: topOffset,
-      useSafeArea: useSafeArea,
-      child: builder(context),
+      child: AnchoredSheet(
+        controller: controller,
+        onClosing: () {
+          if (!controller.isCompleted) {
+            controller.dismiss();
+          }
+        },
+        backgroundColor: backgroundColor,
+        shadowColor: shadowColor,
+        elevation: elevation,
+        shape: shape,
+        clipBehavior: clipBehavior,
+        constraints: constraints,
+        borderRadius: borderRadius,
+        overlayColor: overlayColor,
+        animationDuration: animationDuration,
+        isDismissible: isDismissible,
+        isScrollControlled: isScrollControlled,
+        scrollControlDisabledMaxHeightRatio:
+            scrollControlDisabledMaxHeightRatio,
+        enableDrag: enableDrag,
+        showDragHandle: showDragHandle,
+        dragHandleColor: dragHandleColor,
+        dragHandleSize: dragHandleSize,
+        anchorKey: anchorKey,
+        topOffset: topOffset,
+        useSafeArea: useSafeArea,
+        child: builder(context),
+      ),
     ),
   );
 
   if (context.mounted) {
     Overlay.of(context).insert(overlayEntry);
   } else {
-    // Context is no longer mounted, clean up and return null
-    clearController();
+    // Context is no longer mounted, dispose controller and return null
+    controller.dispose();
     return null;
   }
 
   final result = await controller.future;
 
   overlayEntry.remove();
-  clearController();
+  controller.dispose();
 
   return result;
 }
@@ -715,41 +640,22 @@ Future<T?> anchoredSheet<T extends Object?>({
 Future<void> dismissAnchoredSheet<T extends Object?>([T? result]) async {
   // Try context-based dismissal through InheritedWidget first
   try {
-    // Use the global navigator context if available
     final context = WidgetsBinding.instance.rootElement;
     if (context != null && context.mounted) {
-      final provider = ModalDismissProvider.maybeOf(context);
-      if (provider != null) {
-        provider.onDismiss(result);
+      final modalManager = ModalManager.maybeOf(context);
+      if (modalManager != null) {
+        modalManager.requestDismiss();
+        return;
+      }
+
+      // Try active sheet tracker
+      if (ActiveSheetTracker.hasActive) {
+        ActiveSheetTracker.currentController?.dismiss(result);
         return;
       }
     }
   } catch (e) {
-    debugPrint('Warning: Could not dismiss through context provider: $e');
-  }
-
-  // Fallback: Try animated dismiss through current state
-  final state = getCurrentState<_AnchoredSheetState>();
-  if (state != null) {
-    try {
-      if (state.mounted) {
-        await state._dismiss(result);
-        return;
-      }
-    } on Exception catch (e) {
-      debugPrint('Warning: Could not dismiss through state: $e');
-    }
-  }
-
-  // Final fallback: controller-based dismissal
-  final controller = getCurrentController<dynamic>();
-  if (controller != null && controller is GenericModalController) {
-    try {
-      controller.dismiss(result);
-      return;
-    } on Exception catch (e) {
-      debugPrint('Warning: Could not dismiss through controller: $e');
-    }
+    debugPrint('Warning: Could not dismiss through context: $e');
   }
 
   debugPrint('Warning: No active modal found to dismiss');
