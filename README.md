@@ -420,6 +420,9 @@ Column(
 )
 ```
 
+## 🆕 What's New in v1.2.2
+- simplification
+
 ## 🆕 What's New in v1.2.1
 
 ### ⚡ Lifecycle Optimization
