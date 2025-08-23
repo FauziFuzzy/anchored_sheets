@@ -5,6 +5,9 @@
 
 A Flutter package for creating modal sheets that slide down from the top of the screen, similar to `showModalBottomSheet` but positioned at the top. Perfect for filter menus, notifications, dropdowns, and any content that should appear anchored to specific widgets or screen positions.
 
+## 🎨 Demo
+![Demo](https://imgur.com/a/lorem-5YedApP)
+
 ## ✨ Features
 
 - 🎯 **Anchor Positioning** - Attach sheets to specific widgets using GlobalKeys
@@ -14,10 +17,9 @@ A Flutter package for creating modal sheets that slide down from the top of the 
 - 🔄 **Easy Dismissal** - Simple `context.popAnchoredSheet()` method for closing sheets
 - 🚀 **Provider Ready** - Built-in support for state management patterns
 - ♿ **Accessibility** - Full screen reader and semantic support
-- 🌐 **Platform Aware** - Works seamlessly across iOS, Android, Web, and Desktop
 - 🛡️ **Type Safe** - Full type safety with generic support
-- 🔄 **Smart Replacement** - Automatic sheet replacement and duplicate prevention
 - 🚫 **Duplicate Prevention** - Prevent re-rendering when clicking same button multiple times
+- ⚡ **Memory Optimized** - Automatic lifecycle management with Flutter best practices
 
 ## 📦 Installation
 
@@ -25,7 +27,7 @@ Add this to your package's `pubspec.yaml` file:
 
 ```yaml
 dependencies:
-  anchored_sheets: ^1.2.0
+  anchored_sheets: ^1.2.1
 ```
 
 Then run:
@@ -651,36 +653,54 @@ anchoredSheet(
 );
 ```
 
-### Animations feel slow
+### SafeArea not working with scroll controlled sheets
 
-**Problem**: Default animation duration is too long.
+**Problem**: SafeArea doesn't work when `isScrollControlled: true`.
 
-**Solution**: Customize animation duration:
+**Solution**: This is now fixed in v1.2.1. Both work together properly:
 
 ```dart
 anchoredSheet(
   context: context,
-  animationDuration: Duration(milliseconds: 200), // Faster
+  useSafeArea: true,        // ✅ Now works correctly
+  isScrollControlled: true, // ✅ Full height with SafeArea
   builder: (context) => YourContent(),
 );
 ```
+
+
+
+## 🆕 What's New in v1.2.1
+
+### ⚡ Lifecycle Optimization
+- **Automatic Controller Management**: Optimized lifecycle management for animation controllers
+- **Memory Efficiency**: Enhanced memory optimization using Flutter lifecycle best practices
+- **Performance Focus**: Streamlined to focus primarily on `anchoredSheet` for better performance
+- **SafeArea Fix**: Fixed issue with SafeArea bottom padding not working correctly
+
+### 🏗️ Architecture Improvements
+- **Modal Manager Optimization**: Streamlined modal manager for better performance
+- **Sheet State Management**: Improved sheet state lifecycle management
+- **Resource Cleanup**: Enhanced automatic resource cleanup and disposal
+- **Type Safety**: Fixed typos and improved type safety across the codebase
+
+### 🔧 Bug Fixes
+- **SafeArea Bottom**: Resolved issue where SafeArea bottom padding wasn't applied correctly
+- **Memory Leaks**: Fixed potential memory leaks in animation controllers
+- **State Management**: Improved state management consistency across different sheet types
+- **Performance**: Reduced overhead in sheet creation and disposal
 
 ## 🆕 What's New in v1.2.0
 
 ### ⚡ Status Bar Animation Performance
 - **Eliminated Delay**: Fixed visual delay between status bar background and sheet content
 - **Unified Rendering**: Single Material container for synchronized rendering
-- **16ms Timing**: Optimized all delays to single frame timing at 60fps
-- **Smoother Feel**: Enhanced animation responsiveness (220ms/180ms timing)
-- **Zero Lag**: Removed rendering desynchronization issues
 
 ### 🚫 Smart Duplicate Prevention
 - **Anchor-based Intelligence**: Uses existing `anchorKey` to detect duplicate sheet requests
-- **No Manual IDs**: No need to manage custom sheet identifiers
 - **Toggle Behavior**: Same button click dismisses sheet, different source replaces it
-- **Zero Configuration**: Works automatically with existing code
 
-### � Automatic Sheet Replacement
+### 🔄 Automatic Sheet Replacement
 - **Default Replacement**: `replaceSheet = true` by default for seamless UX
 - **Smooth Transitions**: 50ms optimized delay for perfect timing
 - **Context Safety**: Automatic `context.mounted` checks prevent errors
@@ -692,15 +712,14 @@ anchoredSheet(
 - **Dialog Compatibility**: Works with alert dialogs and custom dialogs
 - **SnackBar Coexistence**: Smart handling of persistent UI elements
 
-### �️ Architecture Improvements
+### 🏗️ Architecture Improvements
 - **Anchor Key Tracking**: Intelligent storage and comparison of anchor keys
 - **Controller Enhancement**: Better generic type handling and safety
 - **Performance Optimization**: Reduced animation times and smoother transitions
 - **Memory Management**: Automatic cleanup of tracking variables
 
-### � Developer Experience
+### 🛠️ Developer Experience
 - **Cleaner API**: Simplified sheet management without manual configuration
-- **Better Debugging**: Enhanced error messages and development warnings
 - **Example Updates**: Comprehensive demos showing all new features
 - **Documentation**: Updated guides and best practices
 
@@ -749,9 +768,32 @@ setState(() {
 
 ## 🔄 Migration Guide
 
-### From v1.1.x to v1.2.0
+### From v1.2.0 to v1.2.1
 
-**Good News**: No breaking changes! All existing code continues to work.
+**Good News**: No breaking changes! All existing code continues to work with improved performance.
+
+**Automatic Improvements** (no code changes needed):
+```dart
+// Your existing code now runs with optimized lifecycle management
+anchoredSheet(
+  context: context,
+  builder: (context) => YourContent(),
+);
+// Now has better memory optimization and SafeArea handling
+```
+
+**SafeArea Fix** (automatic):
+```dart
+// This now works correctly without any changes
+anchoredSheet(
+  context: context,
+  useSafeArea: true,
+  isScrollControlled: true,
+  builder: (context) => YourContent(),
+);
+```
+
+### From v1.1.x to v1.2.x
 
 **New Defaults** (automatically enabled):
 ```dart
@@ -770,35 +812,8 @@ anchoredSheet(
 );
 ```
 
-**Smart Features** (work automatically):
-```dart
-final buttonKey = GlobalKey();
 
-// This now has smart duplicate prevention built-in
-ElevatedButton(
-  key: buttonKey,
-  onPressed: () {
-    anchoredSheet(
-      context: context,
-      anchorKey: buttonKey, // Automatic smart behavior
-      builder: (context) => YourContent(),
-    );
-  },
-  child: Text('Smart Button'),
-)
-```
-
-**Optional Enhancements**:
-```dart
-// Dismiss other modals first (opt-in)
-anchoredSheet(
-  context: context,
-  dismissOtherModals: true, // NEW: Clean slate behavior
-  builder: (context) => YourContent(),
-);
-```
-
-### From v1.0.x to v1.2.0
+### From v1.0.x to v1.2.x
 
 The API is mostly backwards compatible, but we recommend these updates:
 
@@ -846,12 +861,14 @@ Contributions are welcome! Please read our [Contributing Guide](CONTRIBUTING.md)
 - Inspired by Material Design guidelines
 - Built on Flutter's robust animation and layout systems
 - Thanks to the Flutter community for feedback and suggestions
+- Special thanks to contributors helping improve performance and lifecycle management
 
 ## 📧 Support
 
-<!-- <!-- - 🐛 [File an issue](https://github.com/FauziFuzzy/anchored_sheets/issues) -->
-<!-- - 💬 [Start a discussion](https://github.com/FauziFuzzy/anchored_sheets/discussions) -->
-- 📖 [Read the docs](https://pub.dev/packages/anchored_sheets) -->
+- 📖 [Read the docs](https://pub.dev/packages/anchored_sheets)
+- 🐛 [Report issues](https://github.com/FauziFuzzy/anchored_sheets/issues)
 
 ---
+
+**Made with ❤️ for the Flutter community**
 

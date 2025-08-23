@@ -114,24 +114,6 @@ class _AnchoredSheetsDemoState extends State<AnchoredSheetsDemo> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // Menu button that will anchor a dropdown
-                    ElevatedButton.icon(
-                      key: _menuButtonKey,
-                      onPressed: () async {
-                        return showModalBottomSheet(
-                          isScrollControlled: true,
-                          useSafeArea: true,
-                          showDragHandle: true,
-                          context: context,
-                          builder: (context) {
-                            return Column(children: [Text('data')]);
-                          },
-                        );
-                      },
-                      icon: const Icon(Icons.menu),
-                      label: const Text('not me ?'),
-                    ),
-
                     ElevatedButton.icon(
                       key: _filterButtonKey,
                       onPressed: _showFilterSheet,
@@ -218,12 +200,7 @@ class _AnchoredSheetsDemoState extends State<AnchoredSheetsDemo> {
                         Icons.drag_handle,
                         () => _showDraggableSheet(),
                       ),
-                      _buildDemoCard(
-                        'Scrollable Sheet',
-                        'Large content with scroll',
-                        Icons.view_list,
-                        () => _showScrollableSheet(),
-                      ),
+
                       _buildDemoCard(
                         'Styled Sheet',
                         'Custom styling & shape',
@@ -236,24 +213,7 @@ class _AnchoredSheetsDemoState extends State<AnchoredSheetsDemo> {
                         Icons.edit,
                         () => _showFormSheet(),
                       ),
-                      _buildDemoCard(
-                        'Context-Free',
-                        'Dismiss without context',
-                        Icons.close,
-                        () => _showContextFreeSheet(),
-                      ),
-                      _buildDemoCard(
-                        'Enhanced Gestures',
-                        'Drag to resize, pin, swipe',
-                        Icons.gesture,
-                        () => _showGestureSheet(),
-                      ),
-                      _buildDemoCard(
-                        'Gesture + Performance Demo',
-                        'Advanced gestures (auto-optimized)',
-                        Icons.speed,
-                        () => _showPerformanceSheet(),
-                      ),
+
                       _buildDemoCard(
                         'Safe Modal',
                         'Handle modal conflicts',
@@ -403,36 +363,6 @@ class _AnchoredSheetsDemoState extends State<AnchoredSheetsDemo> {
       showDragHandle: true,
       enableDrag: true,
       builder: (context) => _FilterSheetContent(),
-    );
-  }
-
-  // Scrollable sheet example
-  void _showScrollableSheet() {
-    anchoredSheet(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      showDragHandle: true,
-      builder:
-          (context) => Column(
-            children: [
-              const Text(
-                'Scrollable Content',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
-              Expanded(
-                child: ListView.builder(
-                  itemCount: 20,
-                  itemBuilder:
-                      (context, index) => ListTile(
-                        leading: CircleAvatar(child: Text('${index + 1}')),
-                        title: Text('Item ${index + 1}'),
-                        subtitle: Text('This is item number ${index + 1}'),
-                      ),
-                ),
-              ),
-            ],
-          ),
     );
   }
 
