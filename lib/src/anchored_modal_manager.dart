@@ -11,7 +11,8 @@
 /// * 🔄 **Navigator Integration** - Works seamlessly with Flutter's navigation
 /// * 📱 **Modal Coordination** - Handles multiple modal types gracefully
 /// * ⚡ **Async Dismissal** - Smooth timing for modal transitions
-/// * 🎭 **Context-aware Operations** - Safe modal operations with context checking
+/// * 🎭 **Context-aware Operations** -
+/// Safe modal operations with context checking
 ///
 /// ## Architecture
 ///
@@ -49,9 +50,11 @@ import 'package:flutter/material.dart';
 ///
 /// ## Features
 ///
-/// * **State Propagation** - Efficiently shares modal state down the widget tree
+/// * **State Propagation** -
+/// Efficiently shares modal state down the widget tree
 /// * **Dismissal Coordination** - Centralized handling of modal dismissals
-/// * **Navigator Integration** - Works with Flutter's built-in navigation system
+/// * **Navigator Integration** -
+/// Works with Flutter's built-in navigation system
 /// * **Context Safety** - Provides safe access patterns for modal operations
 /// * **Async Support** - Handles timing-sensitive modal transitions
 ///
@@ -119,8 +122,10 @@ class ModalManager extends InheritedWidget {
   ///
   /// ## Parameters
   ///
-  /// * [child] - Required. The widget subtree that will have access to modal management
-  /// * [onDismissRequest] - Optional. Callback executed when dismissal is requested
+  /// * [child] -
+  /// Required. The widget subtree that will have access to modal management
+  /// * [onDismissRequest] -
+  /// Optional. Callback executed when dismissal is requested
   /// * [key] - Optional. Widget key for identification and optimization
   ///
   /// ## Example
@@ -252,7 +257,8 @@ class ModalManager extends InheritedWidget {
   ///
   /// ## Use Cases
   ///
-  /// * **Modal Replacement**: Dismiss bottom sheet before showing anchored sheet
+  /// * **Modal Replacement**:
+  /// Dismiss bottom sheet before showing anchored sheet
   /// * **Dialog Cleanup**: Clear dialogs before navigation
   /// * **Overlay Management**: Coordinate between different overlay types
   ///

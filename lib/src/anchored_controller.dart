@@ -2,10 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-
 /// Simple static tracking for duplicate prevention
 ///
-/// This class provides minimal global state tracking specifically for preventing
+/// This class provides minimal global state tracking
+/// specifically for preventing
 /// duplicate modal sheets when users click buttons multiple times quickly.
 /// It maintains a clean architecture by only tracking what's necessary.
 ///
@@ -54,7 +54,8 @@ class ActiveSheetTracker {
   ///
   /// Parameters:
   /// * [controller] - The modal controller for the new active sheet
-  /// * [anchorKey] - Optional key identifying the UI element that opened the sheet
+  /// * [anchorKey] -
+  /// Optional key identifying the UI element that opened the sheet
   ///
   /// ```dart
   /// final controller = ModalController<String>();

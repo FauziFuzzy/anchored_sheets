@@ -635,44 +635,6 @@ class _AnchoredSheetsDemoState extends State<AnchoredSheetsDemo> {
     );
   }
 
-  // Anchored menu sheet
-  void _showMenuSheet() async {
-    final result = await anchoredSheet<String>(
-      context: context,
-      anchorKey: _menuButtonKey,
-      useSafeArea: true, // Ensure it doesn't overlap with system UI
-      builder:
-          (context) => Container(
-            constraints: const BoxConstraints(maxWidth: 200),
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Column(
-              children: [
-                _buildMenuItem(Icons.home, 'Home'),
-                _buildMenuItem(Icons.settings, 'Settings'),
-                _buildMenuItem(Icons.help, 'Help'),
-                _buildMenuItem(Icons.info, 'About'),
-              ],
-            ),
-          ),
-    );
-
-    if (result != null) {
-      if (mounted) {
-        final appState = Provider.of<AppState>(context, listen: false);
-        appState.updateOption(result);
-      }
-    }
-  }
-
-  Widget _buildMenuItem(IconData icon, String title) {
-    return ListTile(
-      dense: true,
-      leading: Icon(icon),
-      title: Text(title),
-      onTap: () => context.popAnchoredSheet(title), // Use Navigator.pop instead
-    );
-  }
-
   // Anchored filter sheet
   void _showFilterSheet() async {
     await anchoredSheet<String>(
