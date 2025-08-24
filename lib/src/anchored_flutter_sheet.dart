@@ -107,14 +107,37 @@ class AnchoredSheetPop {
 
   /// Hide/dismiss the anchored sheet
   Future<void> pop<T>([T? result]) async {
-    // Try to find the modal provider in the widget tree
-    final provider = ModalDismissProvider.maybeOf(_context);
-    if (provider != null) {
-      provider.onDismiss(result);
-    } else {
-      // Fallback to the global dismissal mechanism
-      await dismissAnchoredSheet(result);
+    // Priority 1: Try to find the closest modal controller from the widget tree
+    try {
+      final modalManager = ModalManager.maybeOf(_context);
+      if (modalManager != null) {
+        modalManager.requestDismiss();
+        return;
+      }
+    } catch (e) {
+      debugPrint('ModalManager lookup failed: $e');
     }
+
+    // Priority 2: Use stack-aware dismissal for the topmost sheet
+    final topmostController = ActiveSheetTracker.topmostController;
+    if (topmostController != null && !topmostController.isDisposed) {
+      topmostController.dismiss(result);
+      return;
+    }
+
+    // Priority 3: Try Navigator.pop for route-based modals
+    //(fallback for dialogs, etc.)
+    try {
+      if (Navigator.canPop(_context)) {
+        Navigator.pop(_context, result);
+        return;
+      }
+    } catch (e) {
+      debugPrint('Navigator.pop failed: $e');
+    }
+
+    // Final fallback - shouldn't reach here with proper stack management
+    debugPrint('Warning: No dismissible sheet found');
   }
 }
 
@@ -492,7 +515,30 @@ Future<T?> anchoredSheet<T extends Object?>({
       return null;
     }
 
-    if (replaceSheet) {
+    // NEW LOGIC: Handle different scenarios
+    if (dismissOtherModals == false) {
+      // Check if both current and new have anchor keys (different anchors)
+      if (currentAnchorKey != null &&
+          anchorKey != null &&
+          currentAnchorKey != anchorKey) {
+        // Different anchor keys - replace the anchored sheet
+        currentController?.dismiss();
+        // Minimal delay for smooth transition
+        await Future<void>.delayed(const Duration(milliseconds: 16));
+        // Check if context is still mounted after the delay
+        if (!context.mounted) return null;
+      } else if (anchorKey == null) {
+        // No anchor key on new sheet - allow stacking (centered sheet on top)
+        // Don't dismiss current sheet
+      } else {
+        // Other cases - use default replacement behavior
+        if (replaceSheet) {
+          currentController?.dismiss();
+          await Future<void>.delayed(const Duration(milliseconds: 16));
+          if (!context.mounted) return null;
+        }
+      }
+    } else if (replaceSheet) {
       // Automatic replacement - dismiss current and open new
       currentController?.dismiss();
       // Minimal delay for smooth transition
@@ -514,6 +560,8 @@ Future<T?> anchoredSheet<T extends Object?>({
   }
 
   final controller = ModalController<T>();
+  // Add ALL sheets to the stack for proper dismissal order
+  // The stack handles both anchored and non-anchored sheets
   ActiveSheetTracker.setActive(controller, anchorKey);
 
   final overlayEntry = OverlayEntry(

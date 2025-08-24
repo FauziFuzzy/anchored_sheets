@@ -47,6 +47,17 @@ class ActiveSheetTracker {
   /// Used for duplicate prevention and toggle behavior.
   static GlobalKey? _currentAnchorKey;
 
+  /// Stack of all active sheets for proper dismissal order
+  ///
+  /// This maintains a stack of all currently open anchored sheets,
+  /// allowing proper LIFO (Last In, First Out) dismissal behavior.
+  static final List<ModalController<dynamic>> _sheetStack = [];
+
+  /// Stack of anchor keys corresponding to the sheet stack
+  ///
+  /// Parallel array to _sheetStack containing the anchor keys.
+  static final List<GlobalKey?> _anchorKeyStack = [];
+
   /// Sets the currently active sheet controller and anchor key
   ///
   /// This should be called when a new anchored sheet is created to enable
@@ -67,6 +78,10 @@ class ActiveSheetTracker {
   ) {
     _currentController = controller;
     _currentAnchorKey = anchorKey;
+
+    // Add to stack for proper dismissal order
+    _sheetStack.add(controller);
+    _anchorKeyStack.add(anchorKey);
   }
 
   /// Gets the currently active modal controller
@@ -104,6 +119,39 @@ class ActiveSheetTracker {
   static void clear() {
     _currentController = null;
     _currentAnchorKey = null;
+    _sheetStack.clear();
+    _anchorKeyStack.clear();
+  }
+
+  /// Removes a specific controller from the stack
+  ///
+  /// This is called when a sheet is dismissed to maintain stack integrity.
+  static void removeFromStack(ModalController<dynamic> controller) {
+    final index = _sheetStack.indexOf(controller);
+    if (index != -1) {
+      _sheetStack.removeAt(index);
+      _anchorKeyStack.removeAt(index);
+
+      // Update current references to the topmost sheet
+      if (_sheetStack.isNotEmpty) {
+        _currentController = _sheetStack.last;
+        _currentAnchorKey = _anchorKeyStack.last;
+      } else {
+        _currentController = null;
+        _currentAnchorKey = null;
+      }
+    }
+  }
+
+  /// Gets the topmost (most recently added) sheet controller
+  ///
+  /// Returns the controller that should be dismissed when user wants to
+  /// close the "current" sheet. Uses LIFO (Last In, First Out) behavior.
+  static ModalController<dynamic>? get topmostController {
+    if (_sheetStack.isNotEmpty) {
+      return _sheetStack.last;
+    }
+    return _currentController; // Fallback for compatibility
   }
 
   /// Checks if there is currently an active sheet
@@ -148,10 +196,8 @@ class ModalController<T> {
     if (!_completer.isCompleted) {
       _completer.complete(null);
     }
-    // Clear from tracker if this is the active controller
-    if (ActiveSheetTracker._currentController == this) {
-      ActiveSheetTracker.clear();
-    }
+    // Remove from stack and update tracking
+    ActiveSheetTracker.removeFromStack(this);
     _onStateChanged = null;
   }
 }
