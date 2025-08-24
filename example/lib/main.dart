@@ -72,7 +72,6 @@ class AnchoredSheetsDemo extends StatefulWidget {
 class _AnchoredSheetsDemoState extends State<AnchoredSheetsDemo> {
   // Global keys for anchoring sheets to specific widgets
   final GlobalKey _filterButtonKey = GlobalKey();
-  final GlobalKey _anchoredSheetonTop = GlobalKey();
   final GlobalKey _nestedSheetDemoKey = GlobalKey();
 
   final GlobalKey _userAvatarKey = GlobalKey();
