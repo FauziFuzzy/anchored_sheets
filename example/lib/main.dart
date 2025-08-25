@@ -217,7 +217,7 @@ class _AnchoredSheetsDemoState extends State<AnchoredSheetsDemo> {
                     ),
                   ],
                 ),
-
+                Text(appState.notifications.toString()),
                 const SizedBox(height: 16),
               ],
             ),
@@ -369,9 +369,25 @@ class _AnchoredSheetsDemoState extends State<AnchoredSheetsDemo> {
 
   // Anchored profile sheet
   void _showProfileSheet() async {
-    final result = await anchoredSheet<bool>(
+    debugPrint('Opening profile sheet...');
+
+    // Calculate position manually to avoid anchor key conflicts
+    double topOffset = 100; // Default fallback
+    try {
+      final renderBox =
+          _userAvatarKey.currentContext?.findRenderObject() as RenderBox?;
+      if (renderBox?.hasSize == true) {
+        final position = renderBox!.localToGlobal(Offset.zero);
+        topOffset = position.dy + renderBox.size.height;
+      }
+    } catch (e) {
+      debugPrint('Failed to calculate position: $e');
+    }
+
+    final result = await anchoredSheet(
       context: context,
-      anchorKey: _userAvatarKey,
+      // Use manual positioning instead of anchor key to avoid conflicts
+      topOffset: topOffset,
       isScrollControlled: true,
       useSafeArea: true,
       showDragHandle: true,
@@ -397,17 +413,17 @@ class _AnchoredSheetsDemoState extends State<AnchoredSheetsDemo> {
                     title: const Text('Notifications'),
                     value: appState.notifications,
                     onChanged: (value) {
-                      appState.updateNotifications(value);
+                      debugPrint('Switch toggled to: $value');
                       context.popAnchoredSheet(value);
                     },
                   ),
                   ListTile(
                     leading: const Icon(Icons.logout),
                     title: const Text('Sign Out'),
-                    onTap:
-                        () => context.popAnchoredSheet(
-                          false,
-                        ), // Use Navigator.pop instead
+                    onTap: () {
+                      debugPrint('Sign out tapped');
+                      context.popAnchoredSheet(false);
+                    },
                   ),
                 ],
               );
@@ -415,9 +431,19 @@ class _AnchoredSheetsDemoState extends State<AnchoredSheetsDemo> {
           ),
     );
 
+    debugPrint('Profile sheet result: $result (type: ${result.runtimeType})');
     if (result != null) {
-      // Handle profile actions - notifications already updated via Provider
-      // No need to set state here since Provider handles it
+      // Handle the returned value from popAnchoredSheet()
+      if (result is bool) {
+        // Update notifications state with the returned value
+        final appState = Provider.of<AppState>(context, listen: false);
+        appState.updateNotifications(result);
+        debugPrint('Notifications updated to: $result');
+      } else {
+        debugPrint('Result is not bool: $result');
+      }
+    } else {
+      debugPrint('Result is null - checking why...');
     }
   }
 

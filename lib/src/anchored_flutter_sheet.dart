@@ -99,17 +99,17 @@ class AnchoredSheetPop {
 
   /// Hide/dismiss the anchored sheet
   Future<void> pop<T>([T? result]) async {
-    // Priority 1: Try modal manager from widget tree
-    final modalManager = ModalManager.maybeOf(_context);
-    if (modalManager != null) {
-      modalManager.requestDismiss();
-      return;
-    }
-
-    // Priority 2: Use active sheet tracker
+    // Priority 1: Use active sheet tracker (preserves result)
     final topmostController = ActiveSheetTracker.topmostController;
     if (topmostController != null && !topmostController.isDisposed) {
       topmostController.dismiss(result);
+      return;
+    }
+
+    // Priority 2: Try modal manager from widget tree
+    final modalManager = ModalManager.maybeOf(_context);
+    if (modalManager != null) {
+      modalManager.requestDismiss();
       return;
     }
 
@@ -486,7 +486,7 @@ Future<bool?> _handleSheetReplacement({
 ///
 /// * [context.popAnchoredSheet] for dismissing sheets
 /// * [AnchoredSheetModalManager] for advanced modal management
-Future<T?> anchoredSheet<T extends Object?>({
+Future<T?> anchoredSheet<T>({
   required BuildContext context,
   required WidgetBuilder builder,
   Color? backgroundColor,
