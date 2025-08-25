@@ -81,14 +81,6 @@ import 'src.dart';
 /// convenient anchored sheet operations
 extension AnchoredSheetContext on BuildContext {
   /// Hide the current anchored sheet
-  ///
-  /// Usage:
-  /// ```dart
-  /// context.popSheet();
-  /// context.popSheet('result');
-  /// ```
-
-  /// Alternative shorter name
   Future<void> popAnchoredSheet<T>([T? result]) async {
     await AnchoredSheetPop.of(this)?.pop(result);
   }
@@ -96,9 +88,9 @@ extension AnchoredSheetContext on BuildContext {
 
 /// AnchoredSheetPop utility class for context-based dismissal
 class AnchoredSheetPop {
-  final BuildContext _context;
+  const AnchoredSheetPop._(this._context);
 
-  AnchoredSheetPop._(this._context);
+  final BuildContext _context;
 
   /// Get AnchoredSheetPop instance from context
   static AnchoredSheetPop? of(BuildContext context) {
@@ -107,18 +99,14 @@ class AnchoredSheetPop {
 
   /// Hide/dismiss the anchored sheet
   Future<void> pop<T>([T? result]) async {
-    // Priority 1: Try to find the closest modal controller from the widget tree
-    try {
-      final modalManager = ModalManager.maybeOf(_context);
-      if (modalManager != null) {
-        modalManager.requestDismiss();
-        return;
-      }
-    } catch (e) {
-      debugPrint('ModalManager lookup failed: $e');
+    // Priority 1: Try modal manager from widget tree
+    final modalManager = ModalManager.maybeOf(_context);
+    if (modalManager != null) {
+      modalManager.requestDismiss();
+      return;
     }
 
-    // Priority 2: Use stack-aware dismissal for the topmost sheet
+    // Priority 2: Use active sheet tracker
     final topmostController = ActiveSheetTracker.topmostController;
     if (topmostController != null && !topmostController.isDisposed) {
       topmostController.dismiss(result);
@@ -126,18 +114,9 @@ class AnchoredSheetPop {
     }
 
     // Priority 3: Try Navigator.pop for route-based modals
-    //(fallback for dialogs, etc.)
-    try {
-      if (Navigator.canPop(_context)) {
-        Navigator.pop(_context, result);
-        return;
-      }
-    } catch (e) {
-      debugPrint('Navigator.pop failed: $e');
+    if (Navigator.canPop(_context)) {
+      Navigator.pop(_context, result);
     }
-
-    // Final fallback - shouldn't reach here with proper stack management
-    debugPrint('Warning: No dismissible sheet found');
   }
 }
 
@@ -200,9 +179,8 @@ class AnchoredSheet extends StatefulWidget {
 }
 
 class _AnchoredSheetState extends AnchoredSheetState<AnchoredSheet> {
-  final GlobalKey _childKey = GlobalKey(
-    debugLabel: 'AnchoredSheet child',
-  );
+  static const _childKeyDebugLabel = 'AnchoredSheet child';
+  final GlobalKey _childKey = GlobalKey(debugLabel: _childKeyDebugLabel);
 
   bool get dismissUnderway => controller.status == AnimationStatus.reverse;
 
@@ -212,52 +190,50 @@ class _AnchoredSheetState extends AnchoredSheetState<AnchoredSheet> {
   @override
   void initState() {
     super.initState();
-    // Set setState callback for controller updates
-    widget.controller?.setStateCallback(() {
-      if (mounted) setState(() {});
-    });
+    widget.controller?.setStateCallback(_updateState);
+  }
+
+  void _updateState() {
+    if (mounted) setState(() {});
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    _recalculateOffsetAndHeight();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) animateIn();
+    });
+  }
 
-    // Calculate and cache context-dependent values
+  void _recalculateOffsetAndHeight() {
     _cachedTopOffset = calculateTopOffset(
       anchorKey: widget.anchorKey,
       topOffset: widget.topOffset,
       context: context,
       respectStatusBar: widget.isScrollControlled,
     );
-
-    // Cache expensive build operations
     _updateCachedValues();
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) animateIn();
-    });
   }
 
   @override
   void didUpdateWidget(AnchoredSheet oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    bool needsRecache = false;
-
-    // Recalculate top offset if anchor key or top offset changed
-    if (oldWidget.anchorKey != widget.anchorKey ||
-        oldWidget.topOffset != widget.topOffset) {
-      _cachedTopOffset = calculateTopOffset(
-        anchorKey: widget.anchorKey,
-        topOffset: widget.topOffset,
-        context: context,
-        respectStatusBar: widget.isScrollControlled,
-      );
-      needsRecache = true;
+    if (_shouldRecalculateOffset(oldWidget)) {
+      _recalculateOffsetAndHeight();
+    } else if (_shouldUpdateCachedValues(oldWidget)) {
+      _updateCachedValues();
     }
+  }
 
-    // Check if any properties affecting cached components changed
-    if (oldWidget.isScrollControlled != widget.isScrollControlled ||
+  bool _shouldRecalculateOffset(AnchoredSheet oldWidget) {
+    return oldWidget.anchorKey != widget.anchorKey ||
+        oldWidget.topOffset != widget.topOffset;
+  }
+
+  bool _shouldUpdateCachedValues(AnchoredSheet oldWidget) {
+    return oldWidget.isScrollControlled != widget.isScrollControlled ||
         oldWidget.scrollControlDisabledMaxHeightRatio !=
             widget.scrollControlDisabledMaxHeightRatio ||
         oldWidget.backgroundColor != widget.backgroundColor ||
@@ -271,32 +247,24 @@ class _AnchoredSheetState extends AnchoredSheetState<AnchoredSheet> {
         oldWidget.showDragHandle != widget.showDragHandle ||
         oldWidget.dragHandleColor != widget.dragHandleColor ||
         oldWidget.dragHandleSize != widget.dragHandleSize ||
-        oldWidget.enableDrag != widget.enableDrag ||
-        needsRecache) {
-      _updateCachedValues();
-    }
+        oldWidget.enableDrag != widget.enableDrag;
   }
 
   @override
   void dispose() {
-    // Clear setState callback to prevent memory leaks
     widget.controller?.setStateCallback(null);
     super.dispose();
   }
 
-  Future<void> dismissModal() async {
-    await animateOut();
-  }
+  Future<void> dismissModal() => animateOut();
 
-  /// Update cached values for expensive build operations
   void _updateCachedValues() {
-    if (_cachedTopOffset == null) return; // Not ready yet
+    final topOffset = _cachedTopOffset;
+    if (topOffset == null) return;
 
     final screenHeight = MediaQuery.of(context).size.height;
-    final calculatedTopOffset = _cachedTopOffset!;
-    final availableHeight = screenHeight - calculatedTopOffset;
+    final availableHeight = screenHeight - topOffset;
 
-    // Cache modal height calculation
     _cachedModalHeight = calculateModalHeight(
       availableHeight:
           widget.isScrollControlled ? screenHeight : availableHeight,
@@ -381,6 +349,43 @@ class _AnchoredSheetState extends AnchoredSheetState<AnchoredSheet> {
 
     return result;
   }
+}
+
+/// Helper function to handle sheet replacement logic
+Future<bool?> _handleSheetReplacement({
+  required bool dismissOtherModals,
+  required GlobalKey? currentAnchorKey,
+  required GlobalKey? anchorKey,
+  required ModalController<dynamic>? currentController,
+  required bool replaceSheet,
+  required bool toggleOnDuplicate,
+  required BuildContext context,
+}) async {
+  if (!dismissOtherModals) {
+    if (currentAnchorKey != null &&
+        anchorKey != null &&
+        currentAnchorKey != anchorKey) {
+      // Different anchor keys - replace the anchored sheet
+      currentController?.dismiss();
+      await Future<void>.delayed(const Duration(milliseconds: 16));
+      return context.mounted;
+    } else if (anchorKey == null) {
+      // No anchor key on new sheet - allow stacking
+      return true;
+    } else if (replaceSheet) {
+      currentController?.dismiss();
+      await Future<void>.delayed(const Duration(milliseconds: 16));
+      return context.mounted;
+    }
+  } else if (replaceSheet) {
+    currentController?.dismiss();
+    await Future<void>.delayed(const Duration(milliseconds: 16));
+    return context.mounted;
+  } else if (toggleOnDuplicate) {
+    currentController?.dismiss();
+    return false;
+  }
+  return true;
 }
 
 /// Shows an anchored modal sheet that slides down from the top of the screen.
@@ -512,56 +517,30 @@ Future<T?> anchoredSheet<T extends Object?>({
     final currentController = ActiveSheetTracker.currentController;
     final currentAnchorKey = ActiveSheetTracker.currentAnchorKey;
 
-    // Check if this is the same anchor (prevent duplicate)
+    // Handle duplicate anchor keys
     if (anchorKey != null &&
         anchorKey == currentAnchorKey &&
         toggleOnDuplicate) {
-      // Same anchor key - dismiss instead of replace
       currentController?.dismiss();
       return null;
     }
 
-    // NEW LOGIC: Handle different scenarios
-    if (dismissOtherModals == false) {
-      // Check if both current and new have anchor keys (different anchors)
-      if (currentAnchorKey != null &&
-          anchorKey != null &&
-          currentAnchorKey != anchorKey) {
-        // Different anchor keys - replace the anchored sheet
-        currentController?.dismiss();
-        // Minimal delay for smooth transition
-        await Future<void>.delayed(const Duration(milliseconds: 16));
-        // Check if context is still mounted after the delay
-        if (!context.mounted) return null;
-      } else if (anchorKey == null) {
-        // No anchor key on new sheet - allow stacking (centered sheet on top)
-        // Don't dismiss current sheet
-      } else {
-        // Other cases - use default replacement behavior
-        if (replaceSheet) {
-          currentController?.dismiss();
-          await Future<void>.delayed(const Duration(milliseconds: 16));
-          if (!context.mounted) return null;
-        }
-      }
-    } else if (replaceSheet) {
-      // Automatic replacement - dismiss current and open new
-      currentController?.dismiss();
-      // Minimal delay for smooth transition
-      await Future<void>.delayed(const Duration(milliseconds: 16));
-      // Check if context is still mounted after the delay
-      if (!context.mounted) return null;
-    } else {
-      // Legacy behavior when replaceSheet = false
-      if (toggleOnDuplicate) {
-        currentController?.dismiss();
-      }
-      return null;
-    }
+    // Handle sheet replacement logic
+    final shouldDismiss = await _handleSheetReplacement(
+      dismissOtherModals: dismissOtherModals,
+      currentAnchorKey: currentAnchorKey,
+      anchorKey: anchorKey,
+      currentController: currentController,
+      replaceSheet: replaceSheet,
+      toggleOnDuplicate: toggleOnDuplicate,
+      context: context,
+    );
+
+    if (shouldDismiss == false) return null;
   }
 
   // Handle dismissing other modals first
-  if (dismissOtherModals) {
+  if (dismissOtherModals && context.mounted) {
     await ModalManager.dismissOtherModals(context);
   }
 
@@ -570,7 +549,71 @@ Future<T?> anchoredSheet<T extends Object?>({
   // The stack handles both anchored and non-anchored sheets
   ActiveSheetTracker.setActive(controller, anchorKey);
 
-  final overlayEntry = OverlayEntry(
+  final overlayEntry = _createOverlayEntry<T>(
+    controller: controller,
+    builder: builder,
+    backgroundColor: backgroundColor,
+    shadowColor: shadowColor,
+    elevation: elevation,
+    shape: shape,
+    clipBehavior: clipBehavior,
+    constraints: constraints,
+    borderRadius: borderRadius,
+    overlayColor: overlayColor,
+    animationDuration: animationDuration,
+    isDismissible: isDismissible,
+    isScrollControlled: isScrollControlled,
+    scrollControlDisabledMaxHeightRatio: scrollControlDisabledMaxHeightRatio,
+    enableDrag: enableDrag,
+    showDragHandle: showDragHandle,
+    dragHandleColor: dragHandleColor,
+    dragHandleSize: dragHandleSize,
+    anchorKey: anchorKey,
+    topOffset: topOffset,
+    useSafeArea: useSafeArea,
+  );
+
+  if (context.mounted) {
+    Overlay.of(context).insert(overlayEntry);
+  } else {
+    // Context is no longer mounted, dispose controller and return null
+    controller.dispose();
+    return null;
+  }
+
+  final result = await controller.future;
+
+  overlayEntry.remove();
+  controller.dispose();
+
+  return result;
+}
+
+/// Helper function to create overlay entry
+OverlayEntry _createOverlayEntry<T extends Object?>({
+  required ModalController<T> controller,
+  required WidgetBuilder builder,
+  required Color? backgroundColor,
+  required Color? shadowColor,
+  required double? elevation,
+  required ShapeBorder? shape,
+  required Clip? clipBehavior,
+  required BoxConstraints? constraints,
+  required BorderRadius? borderRadius,
+  required Color overlayColor,
+  required Duration animationDuration,
+  required bool isDismissible,
+  required bool isScrollControlled,
+  required double scrollControlDisabledMaxHeightRatio,
+  required bool enableDrag,
+  required bool? showDragHandle,
+  required Color? dragHandleColor,
+  required Size? dragHandleSize,
+  required GlobalKey? anchorKey,
+  required double? topOffset,
+  required bool useSafeArea,
+}) {
+  return OverlayEntry(
     builder: (context) => ModalManager(
       onDismissRequest: () {
         if (!controller.isCompleted) {
@@ -608,21 +651,6 @@ Future<T?> anchoredSheet<T extends Object?>({
       ),
     ),
   );
-
-  if (context.mounted) {
-    Overlay.of(context).insert(overlayEntry);
-  } else {
-    // Context is no longer mounted, dispose controller and return null
-    controller.dispose();
-    return null;
-  }
-
-  final result = await controller.future;
-
-  overlayEntry.remove();
-  controller.dispose();
-
-  return result;
 }
 
 /// Dismisses the currently active TopModalSheet without requiring a
