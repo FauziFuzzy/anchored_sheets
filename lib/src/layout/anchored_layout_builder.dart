@@ -39,7 +39,6 @@ library;
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 /// Builds a positioned modal content with Material theming
 ///
@@ -442,23 +441,27 @@ double calculateTopOffset({
   BuildContext? context,
   bool respectStatusBar = true,
 }) {
-  double calculatedOffset = 0.0;
-
   if (anchorKey != null) {
     final renderBox =
         anchorKey.currentContext?.findRenderObject() as RenderBox?;
     if (renderBox?.hasSize == true) {
       final position = renderBox!.localToGlobal(Offset.zero);
-      calculatedOffset = position.dy + renderBox.size.height;
+      final calculatedOffset = position.dy + renderBox.size.height;
+
+      if (respectStatusBar && context != null && calculatedOffset < 50) {
+        final statusBarHeight = MediaQuery.of(context).padding.top;
+        return math.max(calculatedOffset, statusBarHeight);
+      }
+
+      return calculatedOffset;
     }
-  } else {
-    calculatedOffset = topOffset ?? 0.0;
   }
 
-  // Add status bar height if needed and context is available
+  final calculatedOffset = topOffset ?? 0.0;
+
   if (respectStatusBar && context != null && calculatedOffset < 50) {
     final statusBarHeight = MediaQuery.of(context).padding.top;
-    calculatedOffset = math.max(calculatedOffset, statusBarHeight);
+    return math.max(calculatedOffset, statusBarHeight);
   }
 
   return calculatedOffset;
@@ -584,15 +587,23 @@ class DragHandle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final BottomSheetThemeData bottomSheetTheme =
-        Theme.of(context).bottomSheetTheme;
-    final BottomSheetThemeData m3Defaults = _BottomSheetDefaultsM3(context);
-    final Size handleSize =
+    final theme = Theme.of(context);
+    final bottomSheetTheme = theme.bottomSheetTheme;
+    final m3Defaults = _BottomSheetDefaultsM3(context);
+    final handleSize =
         size ?? bottomSheetTheme.dragHandleSize ?? m3Defaults.dragHandleSize!;
 
+    final resolvedColor =
+        WidgetStateProperty.resolveAs<Color?>(color, states) ??
+            WidgetStateProperty.resolveAs<Color?>(
+              bottomSheetTheme.dragHandleColor,
+              states,
+            ) ??
+            m3Defaults.dragHandleColor;
+
     return MouseRegion(
-      onEnter: (PointerEnterEvent event) => onHover(true),
-      onExit: (PointerExitEvent event) => onHover(false),
+      onEnter: (_) => onHover(true),
+      onExit: (_) => onHover(false),
       child: Semantics(
         label: MaterialLocalizations.of(context).modalBarrierDismissLabel,
         container: true,
@@ -601,21 +612,12 @@ class DragHandle extends StatelessWidget {
           width: math.max(handleSize.width, kMinInteractiveDimension),
           height: math.max(handleSize.height, kMinInteractiveDimension),
           child: Center(
-            child: Container(
-              height: handleSize.height,
-              width: handleSize.width,
+            child: DecoratedBox(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(handleSize.height / 2),
-                color: WidgetStateProperty.resolveAs<Color?>(
-                      color,
-                      states,
-                    ) ??
-                    WidgetStateProperty.resolveAs<Color?>(
-                      bottomSheetTheme.dragHandleColor,
-                      states,
-                    ) ??
-                    m3Defaults.dragHandleColor,
+                color: resolvedColor,
               ),
+              child: SizedBox.fromSize(size: handleSize),
             ),
           ),
         ),
