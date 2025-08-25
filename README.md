@@ -11,15 +11,7 @@ A Flutter package for creating modal sheets that slide down from the top of the 
 ## ✨ Features
 
 - 🎯 **Anchor Positioning** - Attach sheets to specific widgets using GlobalKeys
-- 🎨 **Material Design** - Full theming integration with Material 3 support
-- 📱 **Status Bar Smart** - Intelligent status bar overlap handling with background extension
-- 🖱️ **Drag Support** - Optional drag-to-dismiss with customizable handles
-- 🔄 **Easy Dismissal** - Simple `context.popAnchoredSheet()` method for closing sheets
-- 🚀 **Provider Ready** - Built-in support for state management patterns
-- ♿ **Accessibility** - Full screen reader and semantic support
 - 🛡️ **Type Safe** - Full type safety with generic support
-- 🚫 **Duplicate Prevention** - Prevent re-rendering when clicking same button multiple times
-- ⚡ **Memory Optimized** - Automatic lifecycle management with Flutter best practices
 
 ## 📦 Installation
 
