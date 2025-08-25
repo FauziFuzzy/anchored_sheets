@@ -338,9 +338,10 @@ class _AnchoredSheetsDemoState extends State<AnchoredSheetsDemo> {
       context: context,
       anchorKey: _searchButtonKey,
       enableDrag: true,
-      useSafeArea: true,
+      showDragHandle: true,
       builder:
           (context) => Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
                 autofocus: true,
