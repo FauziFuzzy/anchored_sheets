@@ -83,7 +83,7 @@ class _AnchoredSheetsDemoState extends State<AnchoredSheetsDemo> {
       builder: (context, appState, child) {
         return Scaffold(
           appBar: AppBar(
-            backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+            backgroundColor: Colors.amber,
             title: const Text('Anchored Sheets Demo'),
             actions: [
               // Search button that will anchor a search sheet
@@ -112,11 +112,40 @@ class _AnchoredSheetsDemoState extends State<AnchoredSheetsDemo> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Header section with action buttons
-                Row(
+                Wrap(
                   children: [
                     ElevatedButton.icon(
                       key: _filterButtonKey,
-                      onPressed: _showFilterSheet,
+                      onPressed: () {
+                        anchoredSheet(
+                          isScrollControlled: true,
+                          showDragHandle: true,
+                          useSafeArea: true,
+                          enableDrag: true,
+                          context: context,
+                          builder: (context) {
+                            return Expanded(
+                              child: ListView.builder(
+                                padding: EdgeInsets.zero,
+                                itemCount: 20,
+                                itemBuilder: (context, index) {
+                                  return ListTile(
+                                    title: Text(
+                                      'Itasdsadasdsadasdsadsadsadsadsadem $index',
+                                    ),
+                                    subtitle: Text(
+                                      'aniqweoiweniweniweniwenwienwe $index',
+                                    ),
+                                    onTap: () {
+                                      context.popAnchoredSheet();
+                                    },
+                                  );
+                                },
+                              ),
+                            );
+                          },
+                        );
+                      },
                       icon: const Icon(Icons.filter_list),
                       label: Text('Filter: ${appState.selectedFilter}'),
                     ),
@@ -128,85 +157,68 @@ class _AnchoredSheetsDemoState extends State<AnchoredSheetsDemo> {
                       icon: const Icon(Icons.layers),
                       label: const Text('Nested Demo'),
                     ),
+                    const SizedBox(width: 8),
+                    TextButton(
+                      onPressed: () async {
+                        anchoredSheet(
+                          context: context,
+                          builder: (context) {
+                            return ListView.builder(
+                              padding: EdgeInsets.zero,
+                              itemCount: 20,
+                              itemBuilder: (context, index) {
+                                return ListTile(
+                                  title: Text(
+                                    'Itasdsadasdsadasdsadsadsadsadsadem $index',
+                                  ),
+                                  subtitle: Text(
+                                    'aniqweoiweniweniweniwenwienwe $index',
+                                  ),
+                                  onTap: () {
+                                    context.popAnchoredSheet();
+                                  },
+                                );
+                              },
+                            );
+                          },
+                        );
+                      },
+                      child: const Text('hello'),
+                    ),
+                    TextButton(
+                      onPressed: () async {
+                        showModalBottomSheet(
+                          isScrollControlled: true,
+                          enableDrag: true,
+                          showDragHandle: true,
+                          useSafeArea: true,
+                          context: context,
+                          builder: (context) {
+                            return ListView.builder(
+                              itemCount: 20,
+                              itemBuilder: (context, index) {
+                                return ListTile(
+                                  title: Text(
+                                    'Itasdsadasdsadasdsadsadsadsadsadem $index',
+                                  ),
+                                  subtitle: Text(
+                                    'aniqweoiweniweniweniwenwienwe $index',
+                                  ),
+                                  onTap: () {
+                                    context.popAnchoredSheet();
+                                  },
+                                );
+                              },
+                            );
+                          },
+                        );
+                      },
+                      child: const Text('bottoms'),
+                    ),
                   ],
                 ),
-                const SizedBox(height: 24),
 
-                const Text(
-                  'Test how anchored sheets handle various modal types',
-                  style: TextStyle(color: Colors.grey),
-                ),
                 const SizedBox(height: 16),
-
-                // Modal test buttons
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: [
-                      _buildModalTestButton(
-                        'Bottom Sheet',
-                        Icons.vertical_align_bottom,
-                        Colors.blue,
-                        _showBottomSheetFirst,
-                      ),
-                      const SizedBox(width: 8),
-                      _buildModalTestButton(
-                        'Alert Dialog',
-                        Icons.warning,
-                        Colors.orange,
-                        _showAlertDialogFirst,
-                      ),
-                      const SizedBox(width: 8),
-                      _buildModalTestButton(
-                        'Custom Dialog',
-                        Icons.chat_bubble,
-                        Colors.purple,
-                        _showCustomDialogFirst,
-                      ),
-                      const SizedBox(width: 8),
-                      _buildModalTestButton(
-                        'Snack Bar',
-                        Icons.info,
-                        Colors.green,
-                        _showSnackBarFirst,
-                      ),
-                      const SizedBox(width: 8),
-                      _buildModalTestButton(
-                        'Material Banner',
-                        Icons.announcement,
-                        Colors.red,
-                        _showMaterialBannerFirst,
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 24),
-
-                // Status section
-                const SizedBox(height: 16),
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Current State:',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        Text('Selected Option: ${appState.selectedOption}'),
-                        Text('Filter: ${appState.selectedFilter}'),
-                        Text(
-                          'Search: ${appState.searchQuery.isEmpty ? "None" : appState.searchQuery}',
-                        ),
-                        Text(
-                          'Notifications: ${appState.notifications ? "On" : "Off"}',
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
               ],
             ),
           ),
@@ -215,38 +227,6 @@ class _AnchoredSheetsDemoState extends State<AnchoredSheetsDemo> {
     );
   }
 
-  Widget _buildModalTestButton(
-    String title,
-    IconData icon,
-    Color color,
-    VoidCallback onTap,
-  ) {
-    return ElevatedButton.icon(
-      onPressed: onTap,
-      icon: Icon(icon, size: 18),
-      label: Text(title),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: color.withValues(alpha: 0.1),
-        foregroundColor: color,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      ),
-    );
-  }
-
-  // Anchored filter sheet
-  void _showFilterSheet() async {
-    await anchoredSheet<String>(
-      context: context,
-      anchorKey: _filterButtonKey,
-      isScrollControlled: true,
-      useSafeArea: true,
-      showDragHandle: true,
-      enableDrag: true,
-      builder: (context) => _FilterSheetContent(),
-    );
-  }
-
-  // Nested sheet demo - anchored sheet with button that opens non-anchored sheet
   void _showNestedSheetDemo() async {
     await anchoredSheet<String>(
       context: context,
@@ -303,7 +283,6 @@ class _AnchoredSheetsDemoState extends State<AnchoredSheetsDemo> {
     anchoredSheet<String>(
       context: context,
       // No anchorKey = center of screen positioning
-      dismissOtherModals: false, // Keep the current anchored sheet open
       isScrollControlled: true,
       useSafeArea: true,
       showDragHandle: true,
@@ -442,363 +421,6 @@ class _AnchoredSheetsDemoState extends State<AnchoredSheetsDemo> {
   }
 
   // ========== Modal Conflict Testing Methods ==========
-
-  /// Show a bottom sheet first, then allow testing anchored sheet dismissal
-  void _showBottomSheetFirst() {
-    showModalBottomSheet(
-      context: context,
-      isDismissible: true,
-      builder:
-          (context) => Container(
-            padding: const EdgeInsets.all(20),
-            height: 250,
-            child: Column(
-              children: [
-                const Icon(
-                  Icons.vertical_align_bottom,
-                  size: 48,
-                  color: Colors.blue,
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  'Modal Bottom Sheet',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'This bottom sheet is currently showing. Now try opening an anchored sheet to test dismissal.',
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: () {
-                    // This will dismiss the bottom sheet and show anchored sheet
-                    anchoredSheet(
-                      context: context,
-                      dismissOtherModals: true, // ← Key parameter!
-                      useSafeArea: true,
-                      builder:
-                          (context) => Container(
-                            padding: const EdgeInsets.all(20),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(
-                                  Icons.check_circle,
-                                  size: 48,
-                                  color: Colors.green,
-                                ),
-                                const SizedBox(height: 16),
-                                const Text(
-                                  'Success!',
-                                  style: TextStyle(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                const Text(
-                                  'Anchored sheet automatically dismissed the bottom sheet!',
-                                  textAlign: TextAlign.center,
-                                ),
-                                const SizedBox(height: 16),
-                                ElevatedButton(
-                                  onPressed: () => context.popAnchoredSheet(),
-                                  child: const Text('Close'),
-                                ),
-                              ],
-                            ),
-                          ),
-                    );
-                  },
-                  child: const Text('Test Anchored Sheet Dismissal'),
-                ),
-              ],
-            ),
-          ),
-    );
-  }
-
-  /// Show an alert dialog first, then test anchored sheet dismissal
-  void _showAlertDialogFirst() {
-    showDialog(
-      context: context,
-      builder:
-          (context) => AlertDialog(
-            icon: const Icon(Icons.warning, color: Colors.orange, size: 48),
-            title: const Text('Alert Dialog'),
-            content: const Text(
-              'This is a standard alert dialog. Test how anchored sheets handle dialog dismissal.',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Close'),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  anchoredSheet(
-                    context: context,
-                    dismissOtherModals: true,
-                    useSafeArea: true,
-                    builder:
-                        (context) => Container(
-                          padding: const EdgeInsets.all(20),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(
-                                Icons.check_circle,
-                                size: 48,
-                                color: Colors.green,
-                              ),
-                              const SizedBox(height: 16),
-                              const Text(
-                                'Dialog Dismissed!',
-                                style: TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              const Text(
-                                'Anchored sheet successfully dismissed the alert dialog.',
-                                textAlign: TextAlign.center,
-                              ),
-                              const SizedBox(height: 16),
-                              ElevatedButton(
-                                onPressed: () => context.popAnchoredSheet(),
-                                child: const Text('Close'),
-                              ),
-                            ],
-                          ),
-                        ),
-                  );
-                },
-                child: const Text('Test Dismissal'),
-              ),
-            ],
-          ),
-    );
-  }
-
-  /// Show a custom dialog first, then test anchored sheet dismissal
-  void _showCustomDialogFirst() {
-    showDialog(
-      context: context,
-      barrierDismissible: true,
-      builder:
-          (context) => Dialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Container(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.chat_bubble, color: Colors.purple, size: 48),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Custom Dialog',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'This is a custom styled dialog with rounded corners.',
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 20),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      TextButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        child: const Text('Cancel'),
-                      ),
-                      ElevatedButton(
-                        onPressed: () {
-                          anchoredSheet(
-                            context: context,
-                            dismissOtherModals: true,
-                            useSafeArea: true,
-                            backgroundColor: Colors.purple.shade50,
-                            builder:
-                                (context) => Container(
-                                  padding: const EdgeInsets.all(20),
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      const Icon(
-                                        Icons.auto_fix_high,
-                                        size: 48,
-                                        color: Colors.purple,
-                                      ),
-                                      const SizedBox(height: 16),
-                                      const Text(
-                                        'Custom Dialog Replaced!',
-                                        style: TextStyle(
-                                          fontSize: 20,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 8),
-                                      const Text(
-                                        'The custom dialog was smoothly replaced with this anchored sheet.',
-                                        textAlign: TextAlign.center,
-                                      ),
-                                      const SizedBox(height: 16),
-                                      ElevatedButton(
-                                        onPressed:
-                                            () => context.popAnchoredSheet(),
-                                        child: const Text('Close'),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                          );
-                        },
-                        child: const Text('Replace'),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-    );
-  }
-
-  /// Show a snack bar first, then test if anchored sheet can coexist or dismiss it
-  void _showSnackBarFirst() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text(
-          'This is a SnackBar. It should remain while anchored sheet shows.',
-        ),
-        duration: const Duration(seconds: 10),
-        action: SnackBarAction(
-          label: 'Test Anchored Sheet',
-          onPressed: () {
-            // SnackBars don't usually need dismissal, they coexist nicely
-            anchoredSheet(
-              context: context,
-              useSafeArea: true,
-              builder:
-                  (context) => Container(
-                    padding: const EdgeInsets.all(20),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.info, size: 48, color: Colors.green),
-                        const SizedBox(height: 16),
-                        const Text(
-                          'Coexistence Test',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          'SnackBars and anchored sheets can coexist nicely! Notice the SnackBar is still visible.',
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 16),
-                        ElevatedButton(
-                          onPressed: () {
-                            context.popAnchoredSheet();
-                            ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                          },
-                          child: const Text('Close Both'),
-                        ),
-                      ],
-                    ),
-                  ),
-            );
-          },
-        ),
-      ),
-    );
-  }
-
-  /// Show a material banner first, then test anchored sheet interaction
-  void _showMaterialBannerFirst() {
-    ScaffoldMessenger.of(context).showMaterialBanner(
-      MaterialBanner(
-        content: const Text(
-          'This is a Material Banner. Test anchored sheet interaction.',
-        ),
-        leading: const Icon(Icons.announcement, color: Colors.red),
-        backgroundColor: Colors.red.shade50,
-        actions: [
-          TextButton(
-            onPressed: () {
-              ScaffoldMessenger.of(context).hideCurrentMaterialBanner();
-            },
-            child: const Text('Dismiss'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              anchoredSheet(
-                context: context,
-                useSafeArea: true,
-                backgroundColor: Colors.red.shade50,
-                builder:
-                    (context) => Container(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
-                            Icons.announcement,
-                            size: 48,
-                            color: Colors.red,
-                          ),
-                          const SizedBox(height: 16),
-                          const Text(
-                            'Banner + Sheet Interaction',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          const Text(
-                            'Material banners and anchored sheets can work together. The banner remains visible.',
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 16),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                            children: [
-                              ElevatedButton(
-                                onPressed: () => context.popAnchoredSheet(),
-                                child: const Text('Close Sheet'),
-                              ),
-                              ElevatedButton(
-                                onPressed: () {
-                                  context.popAnchoredSheet();
-                                  ScaffoldMessenger.of(
-                                    context,
-                                  ).hideCurrentMaterialBanner();
-                                },
-                                child: const Text('Close Both'),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-              );
-            },
-            child: const Text('Test Sheet'),
-          ),
-        ],
-      ),
-    );
-  }
-
   void _showTestSheetA() {
     anchoredSheet(
       context: context,
@@ -987,109 +609,4 @@ class _FormSheetContentState extends State<_FormSheetContent> {
   }
 }
 
-class _FilterSheetContent extends StatelessWidget {
-  const _FilterSheetContent();
-
-  @override
-  Widget build(BuildContext context) {
-    return Consumer<AppState>(
-      builder: (context, appState, child) {
-        return Column(
-          children: [
-            TextButton(
-              onPressed: () async {
-                await anchoredSheet<String>(
-                  context: context,
-                  dismissOtherModals: false, // Don't dismiss the current sheet
-                  isScrollControlled: true,
-                  useSafeArea: true,
-                  showDragHandle: true,
-                  enableDrag: true,
-                  builder: (context) {
-                    // show list of items with radio
-                    return Column(
-                      children: [
-                        RadioListTile<String>(
-                          title: const Text('Option 1'),
-                          value: 'Option 1',
-                          groupValue: appState.selectedOption,
-                          onChanged: (value) => appState.updateOption(value!),
-                        ),
-                        RadioListTile<String>(
-                          title: const Text('Option 2'),
-                          value: 'Option 2',
-                          groupValue: appState.selectedOption,
-                          onChanged: (value) => appState.updateOption(value!),
-                        ),
-                      ],
-                    );
-                  },
-                );
-              },
-              child: Text('Anchored Sheet on Top'),
-            ),
-            // Header
-            const Text(
-              'Filter Options',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-
-            // Filter options
-            ...['All', 'Recent', 'Favorites', 'Archived'].map(
-              (filter) => _FilterOption(
-                title: filter,
-                isSelected: appState.selectedFilter == filter,
-                onTap: () => appState.updateFilter(filter),
-              ),
-            ),
-
-            // Action buttons
-          ],
-        );
-      },
-    );
-  }
-}
-
 /// A reusable filter option widget following Flutter best practices
-class _FilterOption extends StatelessWidget {
-  const _FilterOption({
-    required this.title,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  final String title;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      elevation: isSelected ? 2 : 0,
-      color: isSelected ? Theme.of(context).colorScheme.primaryContainer : null,
-      child: ListTile(
-        title: Text(
-          title,
-          style: TextStyle(
-            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-            color:
-                isSelected
-                    ? Theme.of(context).colorScheme.onPrimaryContainer
-                    : null,
-          ),
-        ),
-        trailing:
-            isSelected
-                ? Icon(
-                  Icons.check_circle,
-                  color: Theme.of(context).colorScheme.primary,
-                )
-                : null,
-        onTap: onTap,
-      ),
-    );
-  }
-}

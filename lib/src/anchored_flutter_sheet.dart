@@ -227,7 +227,7 @@ class _AnchoredSheetState extends AnchoredSheetState<AnchoredSheet> {
       anchorKey: widget.anchorKey,
       topOffset: widget.topOffset,
       context: context,
-      respectStatusBar: true,
+      respectStatusBar: widget.isScrollControlled,
     );
 
     // Cache expensive build operations
@@ -251,7 +251,7 @@ class _AnchoredSheetState extends AnchoredSheetState<AnchoredSheet> {
         anchorKey: widget.anchorKey,
         topOffset: widget.topOffset,
         context: context,
-        respectStatusBar: true,
+        respectStatusBar: widget.isScrollControlled,
       );
       needsRecache = true;
     }
@@ -298,7 +298,8 @@ class _AnchoredSheetState extends AnchoredSheetState<AnchoredSheet> {
 
     // Cache modal height calculation
     _cachedModalHeight = calculateModalHeight(
-      availableHeight: availableHeight,
+      availableHeight:
+          widget.isScrollControlled ? screenHeight : availableHeight,
       isScrollControlled: widget.isScrollControlled,
       scrollControlDisabledMaxHeightRatio:
           widget.scrollControlDisabledMaxHeightRatio,
@@ -314,9 +315,13 @@ class _AnchoredSheetState extends AnchoredSheetState<AnchoredSheet> {
   Widget build(BuildContext context) {
     super.build(context); // Required for AutomaticKeepAliveClientMixin
     final calculatedTopOffset = _cachedTopOffset ?? 0.0;
+    final topPadding = MediaQuery.of(context).padding.top;
 
     // Use cached modal height for better performance
     final explicitModalHeight = _cachedModalHeight ?? 200.0;
+
+    final removedSpacingTop = widget.useSafeArea &&
+        (widget.isScrollControlled || calculatedTopOffset > topPadding);
 
     final theme = Theme.of(context).bottomSheetTheme;
     final modalContent = buildModalContent(
@@ -329,7 +334,7 @@ class _AnchoredSheetState extends AnchoredSheetState<AnchoredSheet> {
       shape: widget.shape,
       borderRadius: widget.borderRadius,
       clipBehavior: widget.clipBehavior,
-      useSafeArea: widget.useSafeArea,
+      useSafeArea: removedSpacingTop,
       isScrollControlled: widget.isScrollControlled,
       hasAnchorKey: widget.anchorKey != null,
       showDragHandle: widget.showDragHandle ?? false,
@@ -368,6 +373,7 @@ class _AnchoredSheetState extends AnchoredSheetState<AnchoredSheet> {
             onDismiss: _dismiss,
             backgroundColor: widget.backgroundColor,
             shape: widget.shape,
+            isScrollControlled: widget.isScrollControlled,
           ),
         ],
       ),

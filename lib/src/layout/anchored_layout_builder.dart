@@ -39,6 +39,7 @@ library;
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 /// Builds a positioned modal content with Material theming
 ///
@@ -128,18 +129,13 @@ Widget buildModalContent({
     shape: effectiveShape,
     clipBehavior: effectiveClipBehavior,
     child: showDragHandle
-        ? Stack(
-            alignment: Alignment.bottomCenter,
+        ? Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Padding(
-                padding: const EdgeInsets.only(
-                  bottom: kMinInteractiveDimension,
-                ),
-                child: child,
-              ),
+              Flexible(child: child),
               DragHandle(
                 onSemanticsTap: onDragHandleTap,
-                onHover: onDragHandleHover,
+                onHover: onDragHandleHover ?? (_) {},
                 states: dragHandleStates ?? <WidgetState>{},
                 color: dragHandleColor,
                 size: dragHandleSize,
@@ -313,9 +309,9 @@ Widget buildDismissibleOverlay({
 ///
 /// ## Animation Behavior
 ///
-/// * **Normal Position**: `top = topOffset + (slideAnimation.value * height)`
-/// * **Status Bar Extension**: `top = slideAnimation.value * height`
-///   (starts from 0)
+/// * **Normal Position**: `top = topOffset - (slideAnimation.value * height)`
+/// * **Status Bar Extension**: `top = -slideAnimation.value * height`
+///   (starts from -height, ends at 0)
 ///
 /// This ensures smooth animations regardless of status bar interaction.
 ///
@@ -340,11 +336,14 @@ Widget buildPositionedModal({
   void Function(dynamic)? onDismiss,
   Color? backgroundColor,
   ShapeBorder? shape,
+  bool hasAnchorKey = false,
+  bool isScrollControlled = false,
 }) {
   return Builder(
     builder: (context) {
       final statusBarHeight = MediaQuery.of(context).padding.top;
-      final shouldExtendToStatusBar = topOffset <= statusBarHeight;
+      final shouldExtendToStatusBar =
+          isScrollControlled && topOffset <= statusBarHeight;
 
       final Widget content = ConstrainedBox(
         constraints: BoxConstraints(
@@ -365,45 +364,15 @@ Widget buildPositionedModal({
       // safe area
       if (shouldExtendToStatusBar) {
         // Use a single Material container for unified rendering
-        final unifiedBackground =
-            backgroundColor ?? Theme.of(context).colorScheme.surface;
-
         return Positioned(
           top: slideAnimation.value * height,
           left: 0,
           right: 0,
-          child: Material(
-            type: MaterialType.canvas,
-            color: unifiedBackground,
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                maxHeight: height + statusBarHeight,
-                minWidth: MediaQuery.sizeOf(context).width,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Status bar spacer
-                  //(transparent since Material provides background)
-                  SizedBox(
-                    height: statusBarHeight,
-                    width: MediaQuery.sizeOf(context).width,
-                  ),
-                  // Content container
-                  //(also transparent background to avoid double-painting)
-                  SizedBox(
-                    width: MediaQuery.sizeOf(context).width,
-                    child: DefaultTextStyle(
-                      style: Theme.of(context).textTheme.bodyMedium!,
-                      child: content,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
+          child: content,
         );
       } else {
+        // Calculate animation start position based on whether we have an anchor
+
         return Positioned(
           top: topOffset + (slideAnimation.value * height),
           left: 0,
@@ -600,26 +569,30 @@ double calculateModalHeight({
 class DragHandle extends StatelessWidget {
   const DragHandle({
     super.key,
+    required this.onHover,
     this.onSemanticsTap,
-    this.onHover,
     this.states = const <WidgetState>{},
     this.color,
     this.size,
   });
 
   final VoidCallback? onSemanticsTap;
-  final ValueChanged<bool>? onHover;
+  final ValueChanged<bool> onHover;
   final Set<WidgetState> states;
   final Color? color;
   final Size? size;
 
   @override
   Widget build(BuildContext context) {
-    final handleSize = size ?? const Size(32, 4);
+    final BottomSheetThemeData bottomSheetTheme =
+        Theme.of(context).bottomSheetTheme;
+    final BottomSheetThemeData m3Defaults = _BottomSheetDefaultsM3(context);
+    final Size handleSize =
+        size ?? bottomSheetTheme.dragHandleSize ?? m3Defaults.dragHandleSize!;
 
     return MouseRegion(
-      onEnter: onHover != null ? (event) => onHover!(true) : null,
-      onExit: onHover != null ? (event) => onHover!(false) : null,
+      onEnter: (PointerEnterEvent event) => onHover(true),
+      onExit: (PointerExitEvent event) => onHover(false),
       child: Semantics(
         label: MaterialLocalizations.of(context).modalBarrierDismissLabel,
         container: true,
@@ -633,10 +606,15 @@ class DragHandle extends StatelessWidget {
               width: handleSize.width,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(handleSize.height / 2),
-                color: color ??
-                    Theme.of(
-                      context,
-                    ).colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+                color: WidgetStateProperty.resolveAs<Color?>(
+                      color,
+                      states,
+                    ) ??
+                    WidgetStateProperty.resolveAs<Color?>(
+                      bottomSheetTheme.dragHandleColor,
+                      states,
+                    ) ??
+                    m3Defaults.dragHandleColor,
               ),
             ),
           ),
@@ -693,3 +671,44 @@ class ModalDismissProvider extends InheritedWidget {
 
 /// Legacy alias for backward compatibility
 typedef _ModalProvider = ModalDismissProvider;
+
+// BEGIN GENERATED TOKEN PROPERTIES - BottomSheet
+
+// Do not edit by hand. The code between the "BEGIN GENERATED" and
+// "END GENERATED" comments are generated from data in the Material
+// Design token database by the script:
+//   dev/tools/gen_defaults/bin/gen_defaults.dart.
+
+// dart format off
+class _BottomSheetDefaultsM3 extends BottomSheetThemeData {
+  _BottomSheetDefaultsM3(this.context)
+      : super(
+          elevation: 1.0,
+          modalElevation: 1.0,
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28.0)),
+          ),
+          constraints: const BoxConstraints(maxWidth: 640),
+        );
+
+  final BuildContext context;
+  late final ColorScheme _colors = Theme.of(context).colorScheme;
+
+  @override
+  Color? get backgroundColor => _colors.surfaceContainerLow;
+
+  @override
+  Color? get surfaceTintColor => Colors.transparent;
+
+  @override
+  Color? get shadowColor => Colors.transparent;
+
+  @override
+  Color? get dragHandleColor => _colors.onSurfaceVariant;
+
+  @override
+  Size? get dragHandleSize => const Size(32, 4);
+
+  @override
+  BoxConstraints? get constraints => const BoxConstraints(maxWidth: 640.0);
+}
