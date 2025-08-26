@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.2.7] - 2025-08-27
+- Added new navigation context.popAnchorAndNavigate()
+- Added new navigation context.navigateAndReopenAnchor()
+- Update readme.md
+
 ## [1.2.6] - 2025-08-25
 - Fixed pop with values
 
@@ -87,7 +92,7 @@ No breaking changes - existing code continues to work. New features are enabled 
   - Resolved issue where `GenericModalController<String>` could not be cast to `GenericModalController<bool>?`
   - Implemented type-safe checking in `getCurrentController()` and `getCurrentState()` methods
   - Made controller dismissal work regardless of generic type parameters
-- **Context-based Dismissal**: Fixed `context.popAnchoredSheet()` not working properly
+- **Context-based Dismissal**: Fixed `context.popAnchorSheet()` not working properly
   - Re-enabled fallback to `dismissAnchoredSheet()` when `ModalDismissProvider` is not found
   - Improved dismissal reliability across different anchored sheet types
 - **Provider Integration**: Enhanced state management with Provider pattern
@@ -111,13 +116,13 @@ No breaking changes - existing code continues to work. New features are enabled 
 
 ### Changed
 - **BREAKING CHANGE**: Updated dismissal API to prioritize context-based approach
-  - `context.popAnchoredSheet()` is now the primary recommended method for dismissing sheets
+  - `context.popAnchorSheet()` is now the primary recommended method for dismissing sheets
   - `dismissAnchoredSheet()` is kept for backward compatibility but no longer preferred
   - Updated all examples and documentation to use the new pattern
   - Improved fallback handling for dismissal methods
 
 ### Updated
-- All example code now uses `context.popAnchoredSheet()`
+- All example code now uses `context.popAnchorSheet()`
 - Documentation updated to reflect the preferred dismissal approach
 - Test files updated to use the new API
 
@@ -139,7 +144,7 @@ No breaking changes - existing code continues to work. New features are enabled 
 ### Features
 - **Core Functions:**
   - `anchoredSheet()` - Main function to show modal sheets
-  - `context.popAnchoredSheet()` - Context-free dismissal function
+  - `context.popAnchorSheet()` - Context-free dismissal function
   - `dismissAnchoredSheetWithContext()` - Context-aware dismissal function
 
 - **Positioning Options:**

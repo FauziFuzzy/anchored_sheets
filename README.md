@@ -12,6 +12,9 @@ A Flutter package for creating modal sheets that slide down from the top of the 
 
 - 🎯 **Anchor Positioning** - Attach sheets to specific widgets using GlobalKeys
 - 🛡️ **Type Safe** - Full type safety with generic support
+- 🧭 **Navigation Integration** - Seamless navigation flows with automatic sheet management
+- 🔄 **Flow Control** - Built-in patterns for sheet → navigate → return workflows
+- 📱 **Context Extensions** - Convenient methods for common navigation patterns
 
 ## 📦 Installation
 
@@ -34,6 +37,24 @@ flutter pub get
 
 ```dart
 import 'package:anchored_sheets/anchored_sheets.dart';
+
+// Basic anchored sheet
+void showBasicSheet() async {
+  final result = await anchoredSheet<String>(
+    context: context,
+    builder: (context) => Container(
+      height: 200,
+      child: Center(
+        child: Text('Hello from anchored sheet!'),
+      ),
+    ),
+  );
+  
+  if (result != null) {
+    print('Result: $result');
+  }
+}
+```
 
 
 ### Anchored to Widget
@@ -59,12 +80,12 @@ void showAnchoredMenu() async {
         ListTile(
           leading: Icon(Icons.home),
           title: Text('Home'),
-          onTap: () => context.popAnchoredSheet('home'),
+          onTap: () => context.popAnchorSheet('home'),
         ),
         ListTile(
           leading: Icon(Icons.settings),
           title: Text('Settings'),
-          onTap: () => context.popAnchoredSheet('settings'),
+          onTap: () => context.popAnchorSheet('settings'),
         ),
       ],
     ),
@@ -76,6 +97,84 @@ void showAnchoredMenu() async {
 }
 ```
 
+## 🧭 Navigation Integration
+
+### Sheet → Navigate → Return Pattern
+
+Perfect for selection flows where you need to navigate from a sheet to another screen and return with a value:
+
+```dart
+void showSelectionSheet() async {
+  final result = await anchoredSheet<String>(
+    context: context,
+    anchorKey: buttonKey,
+    builder: (context) => Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text('Current selection: ${selectedValue ?? 'None'}'),
+        ElevatedButton(
+          onPressed: () async {
+            // Navigate and automatically reopen sheet with result
+            final newValue = await context.popAnchorAndNavigate(
+              MaterialPageRoute(
+                builder: (context) => SelectionScreen(current: selectedValue),
+              ),
+            );
+            
+            if (newValue != null) {
+              // Manually reopen with new value
+              showSelectionSheet(initialValue: newValue);
+            }
+          },
+          child: Text('Select Value'),
+        ),
+      ],
+    ),
+  );
+}
+```
+
+### Advanced Flow with Automatic Reopening
+
+For even more streamlined flows, use the `navigateAndReopenAnchor` method:
+
+```dart
+void showAdvancedFlow() async {
+  final result = await context.navigateAndReopenAnchor<String>(
+    MaterialPageRoute(builder: (context) => SelectionScreen()),
+    sheetBuilder: (selectedValue) => MyCustomSheet(
+      value: selectedValue,
+      onNavigate: () => _handleNavigation(selectedValue),
+    ),
+    anchorKey: myButtonKey,
+    reopenOnlyIfResult: true, // Only reopen if navigation returned a value
+  );
+  
+  print('Final result: $result');
+}
+```
+
+## 🔧 Context Extensions
+
+Convenient extension methods for common operations:
+
+```dart
+// Close current anchored sheet
+context.popAnchorSheet('result');
+
+// Navigate after dismissing sheet
+final result = await context.popAnchorAndNavigate(
+  MaterialPageRoute(builder: (context) => NextScreen()),
+);
+
+// Complete flow with automatic sheet management
+final result = await context.navigateAndReopenAnchor(
+  route,
+  sheetBuilder: (value) => MySheet(value: value),
+  anchorKey: buttonKey,
+);
+```
+
 <!-- ## 🤝 Contributing
 
 Contributions are welcome! Please read our [Contributing Guide](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests. -->
@@ -85,7 +184,7 @@ Contributions are welcome! Please read our [Contributing Guide](CONTRIBUTING.md)
 - Inspired by Material Design guidelines
 - Built on Flutter's robust animation and layout systems
 - Thanks to the Flutter community for feedback and suggestions
-- Special thanks to contributors helping improve performance and lifecycle management
+- Special thanks to contributors helping improve performance, lifecycle management, and navigation patterns
 
 ## 📧 Support
 

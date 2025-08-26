@@ -81,8 +81,112 @@ import 'src.dart';
 /// convenient anchored sheet operations
 extension AnchoredSheetContext on BuildContext {
   /// Hide the current anchored sheet
-  Future<void> popAnchoredSheet<T>([T? result]) async {
-    await AnchoredSheetPop.of(this)?.pop(result);
+  ///
+  /// Returns `true` if a sheet was successfully dismissed, `false` otherwise.
+  Future<T?> popAnchorSheet<T>([T? result]) async {
+    try {
+      await AnchoredSheetPop.of(this)?.pop(result);
+      return result;
+    } catch (e) {
+      debugPrint('Warning: Failed to dismiss anchored sheet: $e');
+      return null;
+    }
+  }
+
+  /// Dismiss any active anchored sheets and then navigate
+  ///
+  /// This method ensures proper cleanup before navigation by:
+  /// 1. Dismissing active anchored sheets
+  /// 2. Waiting for dismissal animation to complete
+  /// 3. Navigating only if context is still valid
+  ///
+  /// Returns the navigation result or `null` if navigation failed.
+  Future<T?> popAnchorAndNavigate<T extends Object?>(
+    Route<T> route,
+  ) async {
+    // Validate context before starting
+    if (!mounted) return null;
+
+    try {
+      // First dismiss any active sheets
+      await dismissAnchoredSheet();
+
+      // Verify context is still mounted after delay
+      if (!mounted) return null;
+
+      return Navigator.push(this, route);
+    } catch (e) {
+      debugPrint('Warning: Navigation after dismiss failed: $e');
+      return null;
+    }
+  }
+
+  /// Navigate to a screen and automatically reopen an anchored sheet with the result.
+  ///
+  /// This method provides a complete flow for selection patterns:
+  /// 1. Dismisses current anchored sheet
+  /// 2. Navigates to selection screen
+  /// 3. Reopens the anchored sheet with the selected value
+  /// 4. Returns the final result from the reopened sheet
+  ///
+  /// Example:
+  /// ```dart
+  /// final result = await context.navigateAndReopenAnchor(
+  ///   MaterialPageRoute(builder: (context) => SelectionScreen()),
+  ///   sheetBuilder: (selectedValue) => MySheet(value: selectedValue),
+  ///   anchorKey: myButtonKey,
+  /// );
+  /// ```
+  Future<T?> navigateAndReopenAnchor<T extends Object?>(
+    Route<T> route, {
+    required Widget Function(T? result) sheetBuilder,
+    GlobalKey? anchorKey,
+    Duration dismissDelay = const Duration(milliseconds: 100),
+    bool isScrollControlled = true,
+    bool showDragHandle = true,
+    bool useSafeArea = true,
+    bool enableDrag = true,
+    Color? backgroundColor,
+    bool isDismissible = true,
+    bool reopenOnlyIfResult = true,
+  }) async {
+    // Validate context and required parameters
+    if (!mounted) return null;
+
+    try {
+      // Dismiss any active sheets
+      dismissAnchoredSheet();
+
+      // Wait for dismissal to complete
+      await Future<void>.delayed(dismissDelay);
+
+      //  Verify context is still valid and navigate
+      if (!mounted) return null;
+
+      final navigationResult = await Navigator.push(this, route);
+
+      // Reopen sheet if we have a result (or always if configured)
+      if (!mounted) return navigationResult;
+
+      if (navigationResult != null || !reopenOnlyIfResult) {
+        return anchoredSheet<T>(
+          context: this,
+          anchorKey: anchorKey,
+          isScrollControlled: isScrollControlled,
+          showDragHandle: showDragHandle,
+          useSafeArea: useSafeArea,
+          enableDrag: enableDrag,
+          backgroundColor: backgroundColor,
+          isDismissible: isDismissible,
+          builder: (context) => sheetBuilder(navigationResult),
+        );
+      }
+
+      return navigationResult;
+    } catch (e) {
+      debugPrint('Warning: Navigate and reopen sheet failed: $e');
+      return null;
+    }
   }
 }
 
@@ -99,21 +203,21 @@ class AnchoredSheetPop {
 
   /// Hide/dismiss the anchored sheet
   Future<void> pop<T>([T? result]) async {
-    // Priority 1: Use active sheet tracker (preserves result)
+    // Use active sheet tracker (preserves result)
     final topmostController = ActiveSheetTracker.topmostController;
     if (topmostController != null && !topmostController.isDisposed) {
       topmostController.dismiss(result);
       return;
     }
 
-    // Priority 2: Try modal manager from widget tree
+    // Try modal manager from widget tree
     final modalManager = ModalManager.maybeOf(_context);
     if (modalManager != null) {
       modalManager.requestDismiss();
       return;
     }
 
-    // Priority 3: Try Navigator.pop for route-based modals
+    // Try Navigator.pop for route-based modals
     if (Navigator.canPop(_context)) {
       Navigator.pop(_context, result);
     }
@@ -480,11 +584,11 @@ Future<bool?> _handleSheetReplacement({
 /// ## Returns
 ///
 /// A [Future] that completes when the sheet is dismissed, returning the value
-/// passed to [context.popAnchoredSheet] or null if dismissed without a value.
+/// passed to [context.popAnchorSheet] or null if dismissed without a value.
 ///
 /// ## See Also
 ///
-/// * [context.popAnchoredSheet] for dismissing sheets
+/// * [context.popAnchorSheet] for dismissing sheets
 /// * [AnchoredSheetModalManager] for advanced modal management
 Future<T?> anchoredSheet<T>({
   required BuildContext context,
@@ -664,23 +768,23 @@ OverlayEntry _createOverlayEntry<T extends Object?>({
 ///
 /// ```dart
 /// // Simple dismissal (no type needed)
-/// context.popAnchoredSheet();
+/// context.popAnchorSheet();
 ///
 /// // Dismissal with return value (String)
-/// context.popAnchoredSheet<String>('confirmed');
+/// context.popAnchorSheet<String>('confirmed');
 ///
 /// // Dismissal with return value (Map)
-/// context.popAnchoredSheet<Map<String, dynamic>>({'status': 'completed'});
+/// context.popAnchorSheet<Map<String, dynamic>>({'status': 'completed'});
 ///
 /// // The type can be inferred from the parameter
-/// context.popAnchoredSheet('hello'); // T is inferred as String
+/// context.popAnchorSheet('hello'); // T is inferred as String
 /// ```
 ///
 /// ## In Button Callbacks
 ///
 /// ```dart
 /// ElevatedButton(
-///   onPressed: () => context.popAnchoredSheet('confirmed'), // Type inferred
+///   onPressed: () => context.popAnchorSheet('confirmed'), // Type inferred
 ///   child: Text('Confirm'),
 /// ),
 /// ```
@@ -690,11 +794,11 @@ OverlayEntry _createOverlayEntry<T extends Object?>({
 /// ```dart
 /// class AppUtils {
 ///   static void closeModal(BuildContext context) {
-///     context.popAnchoredSheet(); // Works with context!
+///     context.popAnchorSheet(); // Works with context!
 ///   }
 ///
 ///   static void closeWithResult(BuildContext context, String result) {
-///     context.popAnchoredSheet(result); // Type automatically inferred as String
+///     context.popAnchorSheet(result); // Type automatically inferred as String
 ///   }
 /// }
 /// ```
@@ -755,7 +859,7 @@ Future<void> dismissAnchoredSheet<T extends Object?>([T? result]) async {
 /// ```dart
 /// Widget build(BuildContext context) {
 ///   return ElevatedButton(
-///     onPressed: () => context.popAnchoredSheet('result'),
+///     onPressed: () => context.popAnchorSheet('result'),
 ///     // Type inferred
 ///     child: Text('Close with Context'),
 ///   );
@@ -775,11 +879,11 @@ Future<void> dismissAnchoredSheet<T extends Object?>([T? result]) async {
 ///
 /// ## See Also
 ///
-/// * [context.popAnchoredSheet] - Simpler context-based dismissal (recommended)
+/// * [context.popAnchorSheet] - Simpler context-based dismissal (recommended)
 Future<void> dismissAnchoredSheetWithContext<T extends Object?>(
   BuildContext context, [
   T? result,
 ]) async {
   // Use the new context-based method
-  context.popAnchoredSheet(result);
+  context.popAnchorSheet(result);
 }
