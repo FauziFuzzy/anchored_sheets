@@ -121,7 +121,8 @@ extension AnchoredSheetContext on BuildContext {
     }
   }
 
-  /// Navigate to a screen and automatically reopen an anchored sheet with the result.
+  /// Navigate to a screen and automatically
+  /// reopen an anchored sheet with the result.
   ///
   /// This method provides a complete flow for selection patterns:
   /// 1. Dismisses current anchored sheet
