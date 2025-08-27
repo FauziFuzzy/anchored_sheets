@@ -124,24 +124,22 @@ class _AnchoredSheetsDemoState extends State<AnchoredSheetsDemo> {
                           enableDrag: true,
                           context: context,
                           builder: (context) {
-                            return Expanded(
-                              child: ListView.builder(
-                                padding: EdgeInsets.zero,
-                                itemCount: 20,
-                                itemBuilder: (context, index) {
-                                  return ListTile(
-                                    title: Text(
-                                      'Itasdsadasdsadasdsadsadsadsadsadem $index',
-                                    ),
-                                    subtitle: Text(
-                                      'aniqweoiweniweniweniwenwienwe $index',
-                                    ),
-                                    onTap: () {
-                                      context.popAnchoredSheet();
-                                    },
-                                  );
-                                },
-                              ),
+                            return ListView.builder(
+                              padding: EdgeInsets.zero,
+                              itemCount: 20,
+                              itemBuilder: (context, index) {
+                                return ListTile(
+                                  title: Text(
+                                    'Itasdsadasdsadasdsadsadsadsadsadem $index',
+                                  ),
+                                  subtitle: Text(
+                                    'aniqweoiweniweniweniwenwienwe $index',
+                                  ),
+                                  onTap: () {
+                                    context.popAnchorSheet();
+                                  },
+                                );
+                              },
                             );
                           },
                         );
@@ -158,63 +156,6 @@ class _AnchoredSheetsDemoState extends State<AnchoredSheetsDemo> {
                       label: const Text('Nested Demo'),
                     ),
                     const SizedBox(width: 8),
-                    TextButton(
-                      onPressed: () async {
-                        anchoredSheet(
-                          context: context,
-                          builder: (context) {
-                            return ListView.builder(
-                              padding: EdgeInsets.zero,
-                              itemCount: 20,
-                              itemBuilder: (context, index) {
-                                return ListTile(
-                                  title: Text(
-                                    'Itasdsadasdsadasdsadsadsadsadsadem $index',
-                                  ),
-                                  subtitle: Text(
-                                    'aniqweoiweniweniweniwenwienwe $index',
-                                  ),
-                                  onTap: () {
-                                    context.popAnchoredSheet();
-                                  },
-                                );
-                              },
-                            );
-                          },
-                        );
-                      },
-                      child: const Text('hello'),
-                    ),
-                    TextButton(
-                      onPressed: () async {
-                        showModalBottomSheet(
-                          isScrollControlled: true,
-                          enableDrag: true,
-                          showDragHandle: true,
-                          useSafeArea: true,
-                          context: context,
-                          builder: (context) {
-                            return ListView.builder(
-                              itemCount: 20,
-                              itemBuilder: (context, index) {
-                                return ListTile(
-                                  title: Text(
-                                    'Itasdsadasdsadasdsadsadsadsadsadem $index',
-                                  ),
-                                  subtitle: Text(
-                                    'aniqweoiweniweniweniwenwienwe $index',
-                                  ),
-                                  onTap: () {
-                                    context.popAnchoredSheet();
-                                  },
-                                );
-                              },
-                            );
-                          },
-                        );
-                      },
-                      child: const Text('bottoms'),
-                    ),
                   ],
                 ),
                 Text(appState.notifications.toString()),
@@ -225,6 +166,54 @@ class _AnchoredSheetsDemoState extends State<AnchoredSheetsDemo> {
         );
       },
     );
+  }
+
+  void _showProfileSheet() async {
+    final result = await anchoredSheet(
+      context: context,
+      anchorKey: _userAvatarKey,
+      enableDrag: true,
+      showDragHandle: true,
+      builder:
+          (context) => Consumer<AppState>(
+            builder: (context, appState, child) {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const CircleAvatar(
+                    radius: 30,
+                    child: Icon(Icons.person, size: 30),
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'John Doe',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const Text('john.doe@example.com'),
+                  const SizedBox(height: 16),
+                  SwitchListTile(
+                    title: const Text('Notifications'),
+                    value: appState.notifications,
+                    onChanged: (value) {
+                      appState.updateNotifications(value);
+                    },
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.logout),
+                    title: const Text('Sign Out'),
+                    onTap: () {
+                      context.popAnchorSheet(false);
+                    },
+                  ),
+                ],
+              );
+            },
+          ),
+    );
+
+    if (result != null) {
+      debugPrint('Profile sheet completed with result: $result');
+    }
   }
 
   void _showNestedSheetDemo() async {
@@ -269,7 +258,7 @@ class _AnchoredSheetsDemoState extends State<AnchoredSheetsDemo> {
                 ),
                 const SizedBox(height: 16),
                 TextButton(
-                  onPressed: () => context.popAnchoredSheet(),
+                  onPressed: () => context.popAnchorSheet(),
                   child: const Text('Close Anchored Sheet'),
                 ),
               ],
@@ -314,13 +303,13 @@ class _AnchoredSheetsDemoState extends State<AnchoredSheetsDemo> {
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
                     TextButton(
-                      onPressed: () => context.popAnchoredSheet(),
+                      onPressed: () => context.popAnchorSheet(),
                       child: const Text('Close This Sheet'),
                     ),
                     ElevatedButton(
                       onPressed: () {
                         // Close this sheet and go back to the anchored one
-                        context.popAnchoredSheet();
+                        context.popAnchorSheet();
                       },
                       child: const Text('Back to Anchored'),
                     ),
@@ -351,7 +340,7 @@ class _AnchoredSheetsDemoState extends State<AnchoredSheetsDemo> {
                   border: OutlineInputBorder(),
                 ),
                 onSubmitted:
-                    (value) => context.popAnchoredSheet(
+                    (value) => context.popAnchorSheet(
                       value,
                     ), // Use Navigator.pop instead
               ),
@@ -368,85 +357,6 @@ class _AnchoredSheetsDemoState extends State<AnchoredSheetsDemo> {
   }
 
   // Anchored profile sheet
-  void _showProfileSheet() async {
-    debugPrint('Opening profile sheet...');
-
-    // Calculate position manually to avoid anchor key conflicts
-    double topOffset = 100; // Default fallback
-    try {
-      final renderBox =
-          _userAvatarKey.currentContext?.findRenderObject() as RenderBox?;
-      if (renderBox?.hasSize == true) {
-        final position = renderBox!.localToGlobal(Offset.zero);
-        topOffset = position.dy + renderBox.size.height;
-      }
-    } catch (e) {
-      debugPrint('Failed to calculate position: $e');
-    }
-
-    final result = await anchoredSheet(
-      context: context,
-      // Use manual positioning instead of anchor key to avoid conflicts
-      topOffset: topOffset,
-      isScrollControlled: true,
-      useSafeArea: true,
-      showDragHandle: true,
-      enableDrag: true,
-      builder:
-          (context) => Consumer<AppState>(
-            builder: (context, appState, child) {
-              return Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const CircleAvatar(
-                    radius: 30,
-                    child: Icon(Icons.person, size: 30),
-                  ),
-                  const SizedBox(height: 12),
-                  const Text(
-                    'John Doe',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  const Text('john.doe@example.com'),
-                  const SizedBox(height: 16),
-                  SwitchListTile(
-                    title: const Text('Notifications'),
-                    value: appState.notifications,
-                    onChanged: (value) {
-                      debugPrint('Switch toggled to: $value');
-                      context.popAnchoredSheet(value);
-                    },
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.logout),
-                    title: const Text('Sign Out'),
-                    onTap: () {
-                      debugPrint('Sign out tapped');
-                      context.popAnchoredSheet(false);
-                    },
-                  ),
-                ],
-              );
-            },
-          ),
-    );
-
-    debugPrint('Profile sheet result: $result (type: ${result.runtimeType})');
-    if (result != null) {
-      // Handle the returned value from popAnchoredSheet()
-      if (result is bool) {
-        // Update notifications state with the returned value
-        final appState = Provider.of<AppState>(context, listen: false);
-        appState.updateNotifications(result);
-        debugPrint('Notifications updated to: $result');
-      } else {
-        debugPrint('Result is not bool: $result');
-      }
-    } else {
-      debugPrint('Result is null - checking why...');
-    }
-  }
-
   // ========== Modal Conflict Testing Methods ==========
   void _showTestSheetA() {
     anchoredSheet(
@@ -489,7 +399,7 @@ class _AnchoredSheetsDemoState extends State<AnchoredSheetsDemo> {
                 ),
                 const SizedBox(height: 16),
                 TextButton(
-                  onPressed: () => context.popAnchoredSheet(),
+                  onPressed: () => context.popAnchorSheet(),
                   child: const Text('Close'),
                 ),
               ],
@@ -540,7 +450,7 @@ class _AnchoredSheetsDemoState extends State<AnchoredSheetsDemo> {
                 ),
                 const SizedBox(height: 16),
                 TextButton(
-                  onPressed: () => context.popAnchoredSheet(),
+                  onPressed: () => context.popAnchorSheet(),
                   child: const Text('Close'),
                 ),
               ],
@@ -607,7 +517,7 @@ class _FormSheetContentState extends State<_FormSheetContent> {
               children: [
                 Expanded(
                   child: TextButton(
-                    onPressed: () => context.popAnchoredSheet(null),
+                    onPressed: () => context.popAnchorSheet(null),
                     child: const Text('Cancel'),
                   ),
                 ),
@@ -618,7 +528,7 @@ class _FormSheetContentState extends State<_FormSheetContent> {
                       if (_formKey.currentState!.validate() &&
                           _selectedOption.isNotEmpty) {
                         _formKey.currentState!.save();
-                        context.popAnchoredSheet({
+                        context.popAnchorSheet({
                           'option': _selectedOption,
                           'text': _textInput,
                         });

@@ -43,7 +43,7 @@
 ///   key: filterButtonKey,
 ///   onPressed: () async {
 ///     final result = await showModalTopSheet<Map<String, dynamic>>(
-///       context: context,
+///       context: capturedContext,
 ///       anchorKey: filterButtonKey,
 ///       builder: (context) => FilterMenuWidget(),
 ///     );
@@ -456,43 +456,6 @@ class _AnchoredSheetState extends AnchoredSheetState<AnchoredSheet> {
   }
 }
 
-/// Helper function to handle sheet replacement logic
-Future<bool?> _handleSheetReplacement({
-  required bool dismissOtherModals,
-  required GlobalKey? currentAnchorKey,
-  required GlobalKey? anchorKey,
-  required ModalController<dynamic>? currentController,
-  required bool replaceSheet,
-  required bool toggleOnDuplicate,
-  required BuildContext context,
-}) async {
-  if (!dismissOtherModals) {
-    if (currentAnchorKey != null &&
-        anchorKey != null &&
-        currentAnchorKey != anchorKey) {
-      // Different anchor keys - replace the anchored sheet
-      currentController?.dismiss();
-      await Future<void>.delayed(const Duration(milliseconds: 16));
-      return context.mounted;
-    } else if (anchorKey == null) {
-      // No anchor key on new sheet - allow stacking
-      return true;
-    } else if (replaceSheet) {
-      currentController?.dismiss();
-      await Future<void>.delayed(const Duration(milliseconds: 16));
-      return context.mounted;
-    }
-  } else if (replaceSheet) {
-    currentController?.dismiss();
-    await Future<void>.delayed(const Duration(milliseconds: 16));
-    return context.mounted;
-  } else if (toggleOnDuplicate) {
-    currentController?.dismiss();
-    return false;
-  }
-  return true;
-}
-
 /// Shows an anchored modal sheet that slides down from the top of the screen.
 ///
 /// This function creates a modal overlay similar to [showModalBottomSheet] but
@@ -506,13 +469,13 @@ Future<bool?> _handleSheetReplacement({
 /// a duplicate. This prevents UI flickering
 /// and provides intuitive toggle behavior.
 ///
-/// **Automatic Replacement**: By default ([replaceSheet] = true), showing a new
-/// sheet while another is open will smoothly replace the existing one. This
-/// creates a seamless user experience.
+/// **Automatic Replacement**: Showing a new sheet while another is open will
+/// automatically replace the existing one. This creates a seamless user experience
+/// without requiring additional configuration.
 ///
-/// **Modal Management**: Use [dismissOtherModals] to automatically dismiss
-/// other types of modals (bottom sheets, dialogs)
-/// before showing the anchored sheet.
+/// **Built-in Intelligence**: All duplicate prevention and sheet replacement
+/// behaviors are built into the library, requiring no additional parameters or
+/// state management from the developer.
 ///
 /// ## Example Usage
 ///
@@ -612,49 +575,58 @@ Future<T?> anchoredSheet<T>({
   Size? dragHandleSize,
   GlobalKey? anchorKey,
   double? topOffset,
-  bool toggleOnDuplicate = true,
   bool useSafeArea = false,
-  bool dismissOtherModals = false,
-  bool replaceSheet = true, // Default to true for automatic replacement
 }) async {
-  // Check if there's an existing sheet using the tracker
+  // Capture context early to avoid async gap issues
+  final capturedContext = context;
+
+  // Enhanced duplicate prevention - check immediately before any work
   if (ActiveSheetTracker.hasActive) {
     final currentController = ActiveSheetTracker.currentController;
     final currentAnchorKey = ActiveSheetTracker.currentAnchorKey;
 
-    // Handle duplicate anchor keys
-    if (anchorKey != null &&
-        anchorKey == currentAnchorKey &&
-        toggleOnDuplicate) {
+    // Handle duplicate anchor keys with immediate return (built-in behavior)
+    if (anchorKey != null && anchorKey == currentAnchorKey) {
+      debugPrint(
+        '🔄 Duplicate anchor key detected - dismissing existing sheet '
+        '(key: $anchorKey)',
+      );
       currentController?.dismiss();
-      return null;
+      return null; // Immediate return - no further processing
     }
 
-    // Handle sheet replacement logic
-    final shouldDismiss = await _handleSheetReplacement(
-      dismissOtherModals: dismissOtherModals,
-      currentAnchorKey: currentAnchorKey,
-      anchorKey: anchorKey,
-      currentController: currentController,
-      replaceSheet: replaceSheet,
-      toggleOnDuplicate: toggleOnDuplicate,
-      context: context,
-    );
-
-    if (shouldDismiss == false) return null;
+    // Handle sheet replacement logic if different anchor keys (built-in behavior)
+    // Allow nesting when new sheet has no anchor key (non-anchored sheets)
+    if (anchorKey != null && anchorKey != currentAnchorKey) {
+      debugPrint('🔄 Different anchor key - replacing existing sheet');
+      currentController?.dismiss();
+      // Small delay to allow dismissal to start
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+    } else if (anchorKey == null) {
+      debugPrint('📚 Non-anchored sheet - allowing nesting on top of existing');
+    }
   }
 
-  // Handle dismissing other modals first
-  if (dismissOtherModals && context.mounted) {
-    await ModalManager.dismissOtherModals(context);
+  // Handle dismissing other modals first (built-in behavior disabled)
+  // This behavior is commented out to avoid interfering with normal modal flows
+  // if (capturedContext.mounted) {
+  //   await ModalManager.dismissOtherModals(capturedContext);
+  // }
+
+  // Check context is still mounted after async operations
+  if (!capturedContext.mounted) {
+    debugPrint('❌ Context no longer mounted after async operations');
+    return null;
   }
 
   final controller = ModalController<T>();
   // Add ALL sheets to the stack for proper dismissal order
   // The stack handles both anchored and non-anchored sheets
+  debugPrint('✅ Creating new anchored sheet with key: $anchorKey');
   ActiveSheetTracker.setActive(controller, anchorKey);
 
   final overlayEntry = _createOverlayEntry<T>(
+    originalContext: capturedContext,
     controller: controller,
     builder: builder,
     backgroundColor: backgroundColor,
@@ -678,8 +650,8 @@ Future<T?> anchoredSheet<T>({
     useSafeArea: useSafeArea,
   );
 
-  if (context.mounted) {
-    Overlay.of(context).insert(overlayEntry);
+  if (capturedContext.mounted) {
+    Overlay.of(capturedContext).insert(overlayEntry);
   } else {
     // Context is no longer mounted, dispose controller and return null
     controller.dispose();
@@ -694,8 +666,13 @@ Future<T?> anchoredSheet<T>({
   return result;
 }
 
-/// Helper function to create overlay entry
+/// Helper function to create overlay entry with context inheritance
+///
+/// Uses Flutter's built-in InheritedTheme.captureAll() to automatically
+/// capture and preserve all inherited widgets (like Providers, Themes, etc.)
+/// from the original context and make them available in the overlay.
 OverlayEntry _createOverlayEntry<T extends Object?>({
+  required BuildContext originalContext,
   required ModalController<T> controller,
   required WidgetBuilder builder,
   required Color? backgroundColor,
@@ -719,40 +696,43 @@ OverlayEntry _createOverlayEntry<T extends Object?>({
   required bool useSafeArea,
 }) {
   return OverlayEntry(
-    builder: (context) => ModalManager(
-      onDismissRequest: () {
-        if (!controller.isCompleted) {
-          controller.dismiss();
-        }
-      },
-      child: AnchoredSheet(
-        controller: controller,
-        onClosing: () {
+    builder: (overlayContext) => InheritedTheme.captureAll(
+      originalContext,
+      ModalManager(
+        onDismissRequest: () {
           if (!controller.isCompleted) {
             controller.dismiss();
           }
         },
-        backgroundColor: backgroundColor,
-        shadowColor: shadowColor,
-        elevation: elevation,
-        shape: shape,
-        clipBehavior: clipBehavior,
-        constraints: constraints,
-        borderRadius: borderRadius,
-        overlayColor: overlayColor,
-        animationDuration: animationDuration,
-        isDismissible: isDismissible,
-        isScrollControlled: isScrollControlled,
-        scrollControlDisabledMaxHeightRatio:
-            scrollControlDisabledMaxHeightRatio,
-        enableDrag: enableDrag,
-        showDragHandle: showDragHandle,
-        dragHandleColor: dragHandleColor,
-        dragHandleSize: dragHandleSize,
-        anchorKey: anchorKey,
-        topOffset: topOffset,
-        useSafeArea: useSafeArea,
-        child: builder(context),
+        child: AnchoredSheet(
+          controller: controller,
+          onClosing: () {
+            if (!controller.isCompleted) {
+              controller.dismiss();
+            }
+          },
+          backgroundColor: backgroundColor,
+          shadowColor: shadowColor,
+          elevation: elevation,
+          shape: shape,
+          clipBehavior: clipBehavior,
+          constraints: constraints,
+          borderRadius: borderRadius,
+          overlayColor: overlayColor,
+          animationDuration: animationDuration,
+          isDismissible: isDismissible,
+          isScrollControlled: isScrollControlled,
+          scrollControlDisabledMaxHeightRatio:
+              scrollControlDisabledMaxHeightRatio,
+          enableDrag: enableDrag,
+          showDragHandle: showDragHandle,
+          dragHandleColor: dragHandleColor,
+          dragHandleSize: dragHandleSize,
+          anchorKey: anchorKey,
+          topOffset: topOffset,
+          useSafeArea: useSafeArea,
+          child: builder(overlayContext),
+        ),
       ),
     ),
   );
