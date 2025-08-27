@@ -131,7 +131,8 @@ Widget buildModalContent({
         ? Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // For scroll controlled content, wrap in Expanded to allow proper scrolling
+              // For scroll controlled content,
+              // wrap in Expanded to allow proper scrolling
               if (isScrollControlled)
                 Expanded(child: child)
               else
