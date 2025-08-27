@@ -470,7 +470,8 @@ class _AnchoredSheetState extends AnchoredSheetState<AnchoredSheet> {
 /// and provides intuitive toggle behavior.
 ///
 /// **Automatic Replacement**: Showing a new sheet while another is open will
-/// automatically replace the existing one. This creates a seamless user experience
+/// automatically replace the existing one.
+/// This creates a seamless user experience
 /// without requiring additional configuration.
 ///
 /// **Built-in Intelligence**: All duplicate prevention and sheet replacement
@@ -595,7 +596,8 @@ Future<T?> anchoredSheet<T>({
       return null; // Immediate return - no further processing
     }
 
-    // Handle sheet replacement logic if different anchor keys (built-in behavior)
+    // Handle sheet replacement logic if different anchor keys
+    // (built-in behavior)
     // Allow nesting when new sheet has no anchor key (non-anchored sheets)
     if (anchorKey != null && anchorKey != currentAnchorKey) {
       debugPrint('🔄 Different anchor key - replacing existing sheet');
