@@ -131,7 +131,12 @@ Widget buildModalContent({
         ? Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Flexible(child: child),
+              // For scroll controlled content,
+              // wrap in Expanded to allow proper scrolling
+              if (isScrollControlled)
+                Expanded(child: child)
+              else
+                Flexible(child: child),
               DragHandle(
                 onSemanticsTap: onDragHandleTap,
                 onHover: onDragHandleHover ?? (_) {},
@@ -343,21 +348,36 @@ Widget buildPositionedModal({
       final statusBarHeight = MediaQuery.of(context).padding.top;
       final shouldExtendToStatusBar =
           isScrollControlled && topOffset <= statusBarHeight;
+      final screenHeight = MediaQuery.sizeOf(context).height;
 
-      final Widget content = ConstrainedBox(
-        constraints: BoxConstraints(
-          maxHeight: height,
-          // Don't set minHeight - let the child determine its natural height
-        ),
-        child: ClipRect(
-          child: FadeTransition(
-            opacity: fadeAnimation,
-            child: onDismiss != null
-                ? _ModalProvider(onDismiss: onDismiss, child: child)
-                : child,
-          ),
-        ),
+      // Create the base content with proper scroll constraints
+      Widget content = FadeTransition(
+        opacity: fadeAnimation,
+        child: onDismiss != null
+            ? _ModalProvider(onDismiss: onDismiss, child: child)
+            : child,
       );
+
+      // Apply different constraint strategies based on scroll control
+      if (isScrollControlled) {
+        // For scroll controlled sheets,
+        // allow full height but wrap in proper scrollable container
+        content = SizedBox(
+          height: shouldExtendToStatusBar
+              ? screenHeight
+              : (screenHeight - topOffset),
+          child: ClipRect(child: content),
+        );
+      } else {
+        // For non-scroll controlled sheets, use height constraints
+        content = ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: height,
+            // Don't set minHeight - let the child determine its natural height
+          ),
+          child: ClipRect(child: content),
+        );
+      }
 
       // If sheet overlaps with status bar, extend background and respect
       // safe area
@@ -371,7 +391,6 @@ Widget buildPositionedModal({
         );
       } else {
         // Calculate animation start position based on whether we have an anchor
-
         return Positioned(
           top: topOffset + (slideAnimation.value * height),
           left: 0,

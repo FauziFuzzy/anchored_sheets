@@ -447,6 +447,7 @@ class _AnchoredSheetState extends AnchoredSheetState<AnchoredSheet> {
             backgroundColor: widget.backgroundColor,
             shape: widget.shape,
             isScrollControlled: widget.isScrollControlled,
+            hasAnchorKey: widget.anchorKey != null,
           ),
         ],
       ),
