@@ -488,36 +488,58 @@ double calculateTopOffset({
 
 /// Calculates modal height based on scroll control settings
 ///
-/// For anchored sheets, height calculation is simplified compared to bottom
-/// sheets:
+/// For anchored sheets, height calculation follows showModalBottomSheet 
+/// behavior:
+/// - **Default height**: Uses 9/16 of screen height 
+///   (like showModalBottomSheet) for both anchored and non-anchored sheets 
+///   when not scroll controlled
 /// - **Scroll Controlled**: Returns full available height for sheets with
 ///   internal scrolling
-/// - **Content-Based**: Returns available height, allowing content to size
-///   naturally with MainAxisSize.min
 ///
 /// ## Parameters
 ///
 /// * `availableHeight` - Total screen height available for the modal
-/// * `isScrollControlled` - Whether the modal should use full height
+/// * `isScrollControlled` - Whether the modal should use full height 
 ///   constraints
+/// * `hasAnchorKey` - Whether this sheet is anchored to a specific widget
+///   (currently not used in height calculation)
 ///
 /// ## Example
 ///
 /// ```dart
+/// // Both anchored and non-anchored sheets use default height
 /// final height = calculateModalHeight(
-///   availableHeight: screenHeight - anchorOffset,
-///   isScrollControlled: false, // Uses natural content sizing
+///   availableHeight: screenHeight,
+///   isScrollControlled: false,
+///   hasAnchorKey: true, // Returns ~56% of screen height
 /// );
 ///
-/// final fullHeight = calculateModalHeight(
+/// final height = calculateModalHeight(
 ///   availableHeight: screenHeight,
-///   isScrollControlled: true, // Uses 100% of screen
+///   isScrollControlled: false, 
+///   hasAnchorKey: false, // Also returns ~56% of screen height
+/// );
+///
+/// // Scroll controlled - uses full height
+/// final height = calculateModalHeight(
+///   availableHeight: screenHeight,
+///   isScrollControlled: true,
+///   hasAnchorKey: false, // Returns full screen height
 /// );
 /// ```
 double calculateModalHeight({
   required double availableHeight,
+  bool isScrollControlled = false,
+  bool hasAnchorKey = false,
 }) {
-  return availableHeight;
+  // If scroll controlled, always use full available height
+  if (isScrollControlled) {
+    return availableHeight;
+  }
+  
+  // For both anchored and non-anchored sheets, use default fraction 
+  // like showModalBottomSheet to provide consistent behavior
+  return availableHeight * 9.0 / 16.0;  // ~56% of screen height
 }
 
 /// Reusable drag handle widget for modal sheets

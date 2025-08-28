@@ -369,6 +369,8 @@ class _AnchoredSheetState extends AnchoredSheetState<AnchoredSheet> {
     _cachedModalHeight = calculateModalHeight(
       availableHeight:
           widget.isScrollControlled ? screenHeight : availableHeight,
+      isScrollControlled: widget.isScrollControlled,
+      hasAnchorKey: widget.anchorKey != null,
     );
   }
 
