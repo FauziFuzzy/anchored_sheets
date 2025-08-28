@@ -488,39 +488,25 @@ double calculateTopOffset({
 
 /// Calculates modal height based on scroll control settings
 ///
-/// Determines the maximum height constraint for modal content based on
-/// scroll control preferences and available screen space.
-///
-/// ## Scroll Control Logic
-///
-/// * **Scroll Controlled** (`isScrollControlled: true`):
-///   - Returns full available height
-///   - Allows content to use entire screen space
-///   - Suitable for modals with internal scrolling (ListView, etc.)
-///
-/// * **Fixed Ratio** (`isScrollControlled: false`):
-///   - Returns a percentage of available height
-///   - Default ratio is 9/16 (56.25% of screen height)
-///   - Follows Material Design guidelines for modal sheets
+/// For anchored sheets, height calculation is simplified compared to bottom
+/// sheets:
+/// - **Scroll Controlled**: Returns full available height for sheets with
+///   internal scrolling
+/// - **Content-Based**: Returns available height, allowing content to size
+///   naturally with MainAxisSize.min
 ///
 /// ## Parameters
 ///
 /// * `availableHeight` - Total screen height available for the modal
 /// * `isScrollControlled` - Whether the modal should use full height
-/// * `scrollControlDisabledMaxHeightRatio` - Height ratio when not scroll
-///   controlled
-///
-/// ## Material Design Compliance
-///
-/// The default ratio of 9/16 follows Material Design specifications for
-/// modal bottom sheets, ensuring consistent behavior with system modals.
+///   constraints
 ///
 /// ## Example
 ///
 /// ```dart
 /// final height = calculateModalHeight(
-///   availableHeight: MediaQuery.of(context).size.height,
-///   isScrollControlled: false, // Uses 56.25% of screen
+///   availableHeight: screenHeight - anchorOffset,
+///   isScrollControlled: false, // Uses natural content sizing
 /// );
 ///
 /// final fullHeight = calculateModalHeight(
@@ -530,12 +516,8 @@ double calculateTopOffset({
 /// ```
 double calculateModalHeight({
   required double availableHeight,
-  required bool isScrollControlled,
-  double scrollControlDisabledMaxHeightRatio = 9.0 / 16.0,
 }) {
-  return isScrollControlled
-      ? availableHeight
-      : availableHeight * scrollControlDisabledMaxHeightRatio;
+  return availableHeight;
 }
 
 /// Reusable drag handle widget for modal sheets

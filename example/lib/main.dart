@@ -119,9 +119,7 @@ class _AnchoredSheetsDemoState extends State<AnchoredSheetsDemo> {
                       onPressed: () {
                         anchoredSheet(
                           isScrollControlled: true,
-                          showDragHandle: true,
                           useSafeArea: true,
-                          enableDrag: true,
                           context: context,
                           builder: (context) {
                             return ListView.builder(

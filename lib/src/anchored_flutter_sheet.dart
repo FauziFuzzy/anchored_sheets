@@ -242,7 +242,6 @@ class AnchoredSheet extends StatefulWidget {
   final Duration animationDuration;
   final bool isDismissible;
   final bool isScrollControlled;
-  final double scrollControlDisabledMaxHeightRatio;
   final bool enableDrag;
   final bool? showDragHandle;
   final Color? dragHandleColor;
@@ -268,7 +267,6 @@ class AnchoredSheet extends StatefulWidget {
     this.animationDuration = const Duration(milliseconds: 300),
     this.isDismissible = true,
     this.isScrollControlled = false,
-    this.scrollControlDisabledMaxHeightRatio = 9.0 / 16.0,
     this.enableDrag = false,
     this.showDragHandle,
     this.dragHandleColor,
@@ -339,8 +337,6 @@ class _AnchoredSheetState extends AnchoredSheetState<AnchoredSheet> {
 
   bool _shouldUpdateCachedValues(AnchoredSheet oldWidget) {
     return oldWidget.isScrollControlled != widget.isScrollControlled ||
-        oldWidget.scrollControlDisabledMaxHeightRatio !=
-            widget.scrollControlDisabledMaxHeightRatio ||
         oldWidget.backgroundColor != widget.backgroundColor ||
         oldWidget.shadowColor != widget.shadowColor ||
         oldWidget.elevation != widget.elevation ||
@@ -373,9 +369,6 @@ class _AnchoredSheetState extends AnchoredSheetState<AnchoredSheet> {
     _cachedModalHeight = calculateModalHeight(
       availableHeight:
           widget.isScrollControlled ? screenHeight : availableHeight,
-      isScrollControlled: widget.isScrollControlled,
-      scrollControlDisabledMaxHeightRatio:
-          widget.scrollControlDisabledMaxHeightRatio,
     );
   }
 
@@ -544,8 +537,6 @@ class _AnchoredSheetState extends AnchoredSheetState<AnchoredSheet> {
 ///
 /// ### Scroll Behavior
 /// * [isScrollControlled] - Allow sheet to take full height
-/// * [scrollControlDisabledMaxHeightRatio]
-/// - Max height ratio when not scroll controlled
 ///
 /// ## Returns
 ///
@@ -570,7 +561,6 @@ Future<T?> anchoredSheet<T>({
   Duration animationDuration = const Duration(milliseconds: 300),
   bool isDismissible = true,
   bool isScrollControlled = false,
-  double scrollControlDisabledMaxHeightRatio = 9.0 / 16.0,
   bool enableDrag = false,
   bool? showDragHandle,
   Color? dragHandleColor,
@@ -643,7 +633,6 @@ Future<T?> anchoredSheet<T>({
     animationDuration: animationDuration,
     isDismissible: isDismissible,
     isScrollControlled: isScrollControlled,
-    scrollControlDisabledMaxHeightRatio: scrollControlDisabledMaxHeightRatio,
     enableDrag: enableDrag,
     showDragHandle: showDragHandle,
     dragHandleColor: dragHandleColor,
@@ -689,7 +678,6 @@ OverlayEntry _createOverlayEntry<T extends Object?>({
   required Duration animationDuration,
   required bool isDismissible,
   required bool isScrollControlled,
-  required double scrollControlDisabledMaxHeightRatio,
   required bool enableDrag,
   required bool? showDragHandle,
   required Color? dragHandleColor,
@@ -725,8 +713,6 @@ OverlayEntry _createOverlayEntry<T extends Object?>({
           animationDuration: animationDuration,
           isDismissible: isDismissible,
           isScrollControlled: isScrollControlled,
-          scrollControlDisabledMaxHeightRatio:
-              scrollControlDisabledMaxHeightRatio,
           enableDrag: enableDrag,
           showDragHandle: showDragHandle,
           dragHandleColor: dragHandleColor,

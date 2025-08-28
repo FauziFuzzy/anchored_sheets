@@ -143,7 +143,6 @@ Future<T?> anchoredSheet<T>({
   
   // Scroll behavior
   bool isScrollControlled = false,
-  double scrollControlDisabledMaxHeightRatio = 9.0 / 16.0,
 })
 ```
 
