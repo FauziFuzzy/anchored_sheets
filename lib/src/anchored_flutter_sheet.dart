@@ -309,7 +309,7 @@ class _AnchoredSheetState extends AnchoredSheetState<AnchoredSheet> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     _recalculateOffsetAndHeight();
-    
+
     // Schedule animation for the next frame to ensure proper initialization
     SchedulerBinding.instance.addPostFrameCallback((_) {
       if (mounted && !dismissUnderway) {
@@ -368,7 +368,7 @@ class _AnchoredSheetState extends AnchoredSheetState<AnchoredSheet> {
   void dispose() {
     // Clear the state callback before disposing
     widget.controller?.setStateCallback(null);
-    
+
     // Call super.dispose() which handles animation controller cleanup
     super.dispose();
   }
@@ -392,7 +392,7 @@ class _AnchoredSheetState extends AnchoredSheetState<AnchoredSheet> {
 
   Future<void> _dismiss<T extends Object?>([T? result]) async {
     if (!mounted || dismissUnderway) return;
-    
+
     try {
       await dismissModal();
       if (mounted) {
@@ -641,7 +641,7 @@ Future<T?> anchoredSheet<T>({
   }
 
   final controller = ModalController<T>();
-  
+
   try {
     // Add ALL sheets to the stack for proper dismissal order
     // The stack handles both anchored and non-anchored sheets

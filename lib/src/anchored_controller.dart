@@ -178,18 +178,18 @@ class ModalController<T> {
   final Completer<T?> _completer = Completer<T?>();
   bool _isDisposed = false;
   VoidCallback? _onStateChanged;
-  
+
   /// Future that completes when the modal is dismissed
   Future<T?> get future => _completer.future;
-  
+
   /// Whether the modal has been completed/dismissed
   bool get isCompleted => _completer.isCompleted;
-  
+
   /// Whether this controller has been disposed
   bool get isDisposed => _isDisposed;
 
   /// Sets the callback for state changes
-  /// 
+  ///
   /// This should be called from initState and cleared in dispose
   /// to follow proper widget lifecycle patterns.
   void setStateCallback(VoidCallback? callback) {
@@ -199,15 +199,15 @@ class ModalController<T> {
   }
 
   /// Dismisses the modal with an optional result
-  /// 
+  ///
   /// This method is safe to call multiple times and handles
   /// edge cases gracefully.
   void dismiss([T? result]) {
     if (_isDisposed || _completer.isCompleted) return;
-    
+
     try {
       _completer.complete(result);
-      
+
       // Schedule state update for next frame to ensure widget is still mounted
       if (_onStateChanged != null) {
         SchedulerBinding.instance.addPostFrameCallback((_) {
@@ -226,18 +226,18 @@ class ModalController<T> {
   }
 
   /// Disposes the controller and cleans up resources
-  /// 
+  ///
   /// This method ensures proper cleanup and prevents memory leaks.
   void dispose() {
     if (_isDisposed) return;
-    
+
     _isDisposed = true;
-    
+
     // Complete the completer if not already done
     if (!_completer.isCompleted) {
       _completer.complete(null);
     }
-    
+
     // Clean up tracking and callbacks
     ActiveSheetTracker.removeFromStack(this);
     _onStateChanged = null;
