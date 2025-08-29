@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 
 /// Simple static tracking for duplicate prevention
 ///
@@ -169,34 +170,75 @@ class ActiveSheetTracker {
       _currentController != null && !_currentController!.isDisposed;
 }
 
-/// Simple modal controller with setState-based state management
+/// Modal controller with proper lifecycle management and error handling
+///
+/// This controller follows Flutter best practices for resource management,
+/// async operations, and state updates.
 class ModalController<T> {
   final Completer<T?> _completer = Completer<T?>();
   bool _isDisposed = false;
   VoidCallback? _onStateChanged;
-
+  
+  /// Future that completes when the modal is dismissed
   Future<T?> get future => _completer.future;
+  
+  /// Whether the modal has been completed/dismissed
   bool get isCompleted => _completer.isCompleted;
+  
+  /// Whether this controller has been disposed
   bool get isDisposed => _isDisposed;
 
-  /// Sets the callback for state changes (typically setState from a widget)
+  /// Sets the callback for state changes
+  /// 
+  /// This should be called from initState and cleared in dispose
+  /// to follow proper widget lifecycle patterns.
   void setStateCallback(VoidCallback? callback) {
-    _onStateChanged = callback;
-  }
-
-  void dismiss([T? result]) {
-    if (!_completer.isCompleted && !_isDisposed) {
-      _completer.complete(result);
-      _onStateChanged?.call(); // Trigger setState instead of notifyListeners
+    if (!_isDisposed) {
+      _onStateChanged = callback;
     }
   }
 
+  /// Dismisses the modal with an optional result
+  /// 
+  /// This method is safe to call multiple times and handles
+  /// edge cases gracefully.
+  void dismiss([T? result]) {
+    if (_isDisposed || _completer.isCompleted) return;
+    
+    try {
+      _completer.complete(result);
+      
+      // Schedule state update for next frame to ensure widget is still mounted
+      if (_onStateChanged != null) {
+        SchedulerBinding.instance.addPostFrameCallback((_) {
+          if (!_isDisposed) {
+            _onStateChanged?.call();
+          }
+        });
+      }
+    } catch (error) {
+      debugPrint('Error dismissing modal: $error');
+      // Still complete the completer to prevent hanging
+      if (!_completer.isCompleted) {
+        _completer.complete(result);
+      }
+    }
+  }
+
+  /// Disposes the controller and cleans up resources
+  /// 
+  /// This method ensures proper cleanup and prevents memory leaks.
   void dispose() {
+    if (_isDisposed) return;
+    
     _isDisposed = true;
+    
+    // Complete the completer if not already done
     if (!_completer.isCompleted) {
       _completer.complete(null);
     }
-    // Remove from stack and update tracking
+    
+    // Clean up tracking and callbacks
     ActiveSheetTracker.removeFromStack(this);
     _onStateChanged = null;
   }

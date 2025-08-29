@@ -74,6 +74,7 @@ library;
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 
 import 'src.dart';
 
@@ -297,15 +298,27 @@ class _AnchoredSheetState extends AnchoredSheetState<AnchoredSheet> {
   }
 
   void _updateState() {
-    if (mounted) setState(() {});
+    if (mounted) {
+      SchedulerBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() {});
+      });
+    }
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     _recalculateOffsetAndHeight();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) animateIn();
+    
+    // Schedule animation for the next frame to ensure proper initialization
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      if (mounted && !dismissUnderway) {
+        try {
+          animateIn();
+        } catch (error) {
+          debugPrint('Animation error: $error');
+        }
+      }
     });
   }
 
@@ -353,7 +366,10 @@ class _AnchoredSheetState extends AnchoredSheetState<AnchoredSheet> {
 
   @override
   void dispose() {
+    // Clear the state callback before disposing
     widget.controller?.setStateCallback(null);
+    
+    // Call super.dispose() which handles animation controller cleanup
     super.dispose();
   }
 
@@ -375,8 +391,18 @@ class _AnchoredSheetState extends AnchoredSheetState<AnchoredSheet> {
   }
 
   Future<void> _dismiss<T extends Object?>([T? result]) async {
-    await dismissModal();
-    widget.controller?.dismiss(result);
+    if (!mounted || dismissUnderway) return;
+    
+    try {
+      await dismissModal();
+      if (mounted) {
+        widget.controller?.dismiss(result);
+      }
+    } catch (error) {
+      debugPrint('Dismissal error: $error');
+      // Ensure controller is still notified even if animation fails
+      widget.controller?.dismiss(result);
+    }
   }
 
   @override
@@ -615,49 +641,56 @@ Future<T?> anchoredSheet<T>({
   }
 
   final controller = ModalController<T>();
-  // Add ALL sheets to the stack for proper dismissal order
-  // The stack handles both anchored and non-anchored sheets
-  debugPrint('✅ Creating new anchored sheet with key: $anchorKey');
-  ActiveSheetTracker.setActive(controller, anchorKey);
+  
+  try {
+    // Add ALL sheets to the stack for proper dismissal order
+    // The stack handles both anchored and non-anchored sheets
+    debugPrint('✅ Creating new anchored sheet with key: $anchorKey');
+    ActiveSheetTracker.setActive(controller, anchorKey);
 
-  final overlayEntry = _createOverlayEntry<T>(
-    originalContext: capturedContext,
-    controller: controller,
-    builder: builder,
-    backgroundColor: backgroundColor,
-    shadowColor: shadowColor,
-    elevation: elevation,
-    shape: shape,
-    clipBehavior: clipBehavior,
-    constraints: constraints,
-    borderRadius: borderRadius,
-    overlayColor: overlayColor,
-    animationDuration: animationDuration,
-    isDismissible: isDismissible,
-    isScrollControlled: isScrollControlled,
-    enableDrag: enableDrag,
-    showDragHandle: showDragHandle,
-    dragHandleColor: dragHandleColor,
-    dragHandleSize: dragHandleSize,
-    anchorKey: anchorKey,
-    topOffset: topOffset,
-    useSafeArea: useSafeArea,
-  );
+    final overlayEntry = _createOverlayEntry<T>(
+      originalContext: capturedContext,
+      controller: controller,
+      builder: builder,
+      backgroundColor: backgroundColor,
+      shadowColor: shadowColor,
+      elevation: elevation,
+      shape: shape,
+      clipBehavior: clipBehavior,
+      constraints: constraints,
+      borderRadius: borderRadius,
+      overlayColor: overlayColor,
+      animationDuration: animationDuration,
+      isDismissible: isDismissible,
+      isScrollControlled: isScrollControlled,
+      enableDrag: enableDrag,
+      showDragHandle: showDragHandle,
+      dragHandleColor: dragHandleColor,
+      dragHandleSize: dragHandleSize,
+      anchorKey: anchorKey,
+      topOffset: topOffset,
+      useSafeArea: useSafeArea,
+    );
 
-  if (capturedContext.mounted) {
-    Overlay.of(capturedContext).insert(overlayEntry);
-  } else {
-    // Context is no longer mounted, dispose controller and return null
+    if (capturedContext.mounted) {
+      Overlay.of(capturedContext).insert(overlayEntry);
+    } else {
+      // Context is no longer mounted, dispose controller and return null
+      controller.dispose();
+      return null;
+    }
+
+    final result = await controller.future;
+
+    overlayEntry.remove();
+    controller.dispose();
+
+    return result;
+  } catch (error) {
+    debugPrint('Error creating anchored sheet: $error');
     controller.dispose();
     return null;
   }
-
-  final result = await controller.future;
-
-  overlayEntry.remove();
-  controller.dispose();
-
-  return result;
 }
 
 /// Helper function to create overlay entry with context inheritance
