@@ -131,12 +131,7 @@ Widget buildModalContent({
         ? Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // For scroll controlled content,
-              // wrap in Expanded to allow proper scrolling
-              if (isScrollControlled)
-                Expanded(child: child)
-              else
-                Flexible(child: child),
+              Flexible(child: child),
               DragHandle(
                 onSemanticsTap: onDragHandleTap,
                 onHover: onDragHandleHover ?? (_) {},
@@ -358,26 +353,22 @@ Widget buildPositionedModal({
             : child,
       );
 
-      // Apply different constraint strategies based on scroll control
-      if (isScrollControlled) {
-        // For scroll controlled sheets,
-        // allow full height but wrap in proper scrollable container
-        content = SizedBox(
-          height: shouldExtendToStatusBar
+      // Apply consistent constraint strategy for both scroll controlled and
+      // non-scroll controlled sheets to support MainAxisSize.min
+      final maxHeight = isScrollControlled
+          ? (shouldExtendToStatusBar
               ? screenHeight
-              : (screenHeight - topOffset),
-          child: ClipRect(child: content),
-        );
-      } else {
-        // For non-scroll controlled sheets, use height constraints
-        content = ConstrainedBox(
-          constraints: BoxConstraints(
-            maxHeight: height,
-            // Don't set minHeight - let the child determine its natural height
-          ),
-          child: ClipRect(child: content),
-        );
-      }
+              : (screenHeight - topOffset))
+          : height;
+
+      content = ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: maxHeight,
+          // Don't set minHeight - let the child determine its natural height
+          // This enables MainAxisSize.min to work properly
+        ),
+        child: ClipRect(child: content),
+      );
 
       // If sheet overlaps with status bar, extend background and respect
       // safe area
@@ -488,10 +479,10 @@ double calculateTopOffset({
 
 /// Calculates modal height based on scroll control settings
 ///
-/// For anchored sheets, height calculation follows showModalBottomSheet 
+/// For anchored sheets, height calculation follows showModalBottomSheet
 /// behavior:
-/// - **Default height**: Uses 9/16 of screen height 
-///   (like showModalBottomSheet) for both anchored and non-anchored sheets 
+/// - **Default height**: Uses 9/16 of screen height
+///   (like showModalBottomSheet) for both anchored and non-anchored sheets
 ///   when not scroll controlled
 /// - **Scroll Controlled**: Returns full available height for sheets with
 ///   internal scrolling
@@ -499,7 +490,7 @@ double calculateTopOffset({
 /// ## Parameters
 ///
 /// * `availableHeight` - Total screen height available for the modal
-/// * `isScrollControlled` - Whether the modal should use full height 
+/// * `isScrollControlled` - Whether the modal should use full height
 ///   constraints
 /// * `hasAnchorKey` - Whether this sheet is anchored to a specific widget
 ///   (currently not used in height calculation)
@@ -516,7 +507,7 @@ double calculateTopOffset({
 ///
 /// final height = calculateModalHeight(
 ///   availableHeight: screenHeight,
-///   isScrollControlled: false, 
+///   isScrollControlled: false,
 ///   hasAnchorKey: false, // Also returns ~56% of screen height
 /// );
 ///
@@ -532,14 +523,15 @@ double calculateModalHeight({
   bool isScrollControlled = false,
   bool hasAnchorKey = false,
 }) {
-  // If scroll controlled, always use full available height
+  // For scroll controlled sheets, provide full available height as the maximum
+  // constraint, but let content size naturally (MainAxisSize.min support)
   if (isScrollControlled) {
     return availableHeight;
   }
-  
-  // For both anchored and non-anchored sheets, use default fraction 
+
+  // For non-scroll controlled sheets, use default fraction
   // like showModalBottomSheet to provide consistent behavior
-  return availableHeight * 9.0 / 16.0;  // ~56% of screen height
+  return availableHeight * 9.0 / 16.0; // ~56% of screen height
 }
 
 /// Reusable drag handle widget for modal sheets
