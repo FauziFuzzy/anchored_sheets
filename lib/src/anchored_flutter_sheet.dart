@@ -78,47 +78,140 @@ import 'package:flutter/scheduler.dart';
 
 import 'src.dart';
 
-/// Extension methods for BuildContext to provide
-/// convenient anchored sheet operations
+/// Enhanced extension methods for BuildContext to provide
+/// convenient anchored sheet operations with improved error handling
 extension AnchoredSheetContext on BuildContext {
-  /// Hide the current anchored sheet
+  /// Hide the current anchored sheet with enhanced error handling
   ///
   /// Returns `true` if a sheet was successfully dismissed, `false` otherwise.
-  Future<T?> popAnchorSheet<T>([T? result]) async {
+  /// This method includes comprehensive error handling and logging.
+  Future<bool> popAnchorSheet<T>([T? result]) async {
+    if (!mounted) {
+      AppLogger.w(
+        'Cannot dismiss sheet: context not mounted',
+        tag: 'AnchoredSheetContext',
+      );
+      return false;
+    }
+
     try {
-      await AnchoredSheetPop.of(this)?.pop(result);
-      return result;
-    } catch (e) {
-      debugPrint('Warning: Failed to dismiss anchored sheet: $e');
+      final sheetPop = AnchoredSheetPop.of(this);
+      if (sheetPop != null) {
+        await sheetPop.pop(result);
+        AppLogger.d(
+          'Successfully dismissed anchored sheet',
+          tag: 'AnchoredSheetContext',
+        );
+        return true;
+      } else {
+        AppLogger.d(
+          'No active sheet found to dismiss',
+          tag: 'AnchoredSheetContext',
+        );
+        return false;
+      }
+    } catch (e, stackTrace) {
+      AppLogger.e(
+        'Failed to dismiss anchored sheet',
+        error: e,
+        stackTrace: stackTrace,
+        tag: 'AnchoredSheetContext',
+      );
+      return false;
+    }
+  }
+
+  /// Dismiss any active anchored sheets and
+  /// then navigate with improved flow control
+  ///
+  /// This method ensures proper cleanup before navigation by:
+  /// 1. Dismissing active anchored sheets with timeout protection
+  /// 2. Waiting for dismissal animation to complete with error handling
+  /// 3. Navigating only if context is still valid
+  /// 4. Providing detailed logging throughout the process
+  ///
+  /// Returns the navigation result or `null` if navigation failed.
+  Future<T?> popAnchorAndNavigate<T extends Object?>(
+    Route<T> route, {
+    Duration dismissTimeout = const Duration(seconds: 2),
+    Duration dismissDelay = const Duration(milliseconds: 100),
+  }) async {
+    // Validate context before starting
+    if (!mounted) {
+      AppLogger.w(
+        'Cannot navigate: context not mounted',
+        tag: 'AnchoredSheetContext',
+      );
+      return null;
+    }
+
+    try {
+      // First dismiss any active sheets with timeout protection
+      final dismissCompleter = Completer<void>();
+      final dismissTimer = Timer(dismissTimeout, () {
+        if (!dismissCompleter.isCompleted) {
+          AppLogger.w(
+            'Dismiss timeout reached, proceeding with navigation',
+            tag: 'AnchoredSheetContext',
+          );
+          dismissCompleter.complete();
+        }
+      });
+
+      unawaited(
+        dismissAnchoredSheet().then((_) {
+          if (!dismissCompleter.isCompleted) {
+            dismissCompleter.complete();
+          }
+          dismissTimer.cancel();
+        }),
+      );
+
+      await dismissCompleter.future;
+
+      // Wait for dismissal to complete
+      await Future<void>.delayed(dismissDelay);
+
+      // Verify context is still valid and navigate
+      if (!mounted) {
+        AppLogger.w(
+          'Context no longer mounted after dismiss delay',
+          tag: 'AnchoredSheetContext',
+        );
+        return null;
+      }
+
+      AppLogger.d(
+        'Navigating after sheet dismissal',
+        tag: 'AnchoredSheetContext',
+      );
+      return Navigator.push(this, route);
+    } catch (e, stackTrace) {
+      AppLogger.e(
+        'Navigation after dismiss failed',
+        error: e,
+        stackTrace: stackTrace,
+        tag: 'AnchoredSheetContext',
+      );
       return null;
     }
   }
 
-  /// Dismiss any active anchored sheets and then navigate
+  /// Check if an anchored sheet is currently showing
   ///
-  /// This method ensures proper cleanup before navigation by:
-  /// 1. Dismissing active anchored sheets
-  /// 2. Waiting for dismissal animation to complete
-  /// 3. Navigating only if context is still valid
-  ///
-  /// Returns the navigation result or `null` if navigation failed.
-  Future<T?> popAnchorAndNavigate<T extends Object?>(
-    Route<T> route,
-  ) async {
-    // Validate context before starting
-    if (!mounted) return null;
-
+  /// Returns `true` if there's an active anchored sheet, `false` otherwise.
+  /// This method provides a way to check sheet status without
+  /// attempting dismissal.
+  bool get hasActiveAnchorSheet {
     try {
-      // First dismiss any active sheets
-      await dismissAnchoredSheet();
-
-      // Verify context is still mounted after delay
-      if (!mounted) return null;
-
-      return Navigator.push(this, route);
+      return AnchoredSheetPop.of(this) != null || ActiveSheetTracker.hasActive;
     } catch (e) {
-      debugPrint('Warning: Navigation after dismiss failed: $e');
-      return null;
+      AppLogger.w(
+        'Error checking active sheet status',
+        error: e,
+        tag: 'AnchoredSheetContext',
+      );
+      return false;
     }
   }
 
@@ -127,21 +220,33 @@ extension AnchoredSheetContext on BuildContext {
   ///
   /// This method provides a complete flow for selection patterns:
   /// 1. Dismisses current anchored sheet
-  /// 2. Navigates to selection screen
+  /// 2. Navigates using the provided navigation function
   /// 3. Reopens the anchored sheet with the selected value
   /// 4. Returns the final result from the reopened sheet
   ///
-  /// Example:
+  /// Example with standard Route:
   /// ```dart
   /// final result = await context.navigateAndReopenAnchor(
-  ///   MaterialPageRoute(builder: (context) => SelectionScreen()),
+  ///   navigate: () => Navigator.push(
+  ///     context,
+  ///     MaterialPageRoute(builder: (context) => SelectionScreen()),
+  ///   ),
   ///   sheetBuilder: (selectedValue) => MySheet(value: selectedValue),
   ///   anchorKey: myButtonKey,
   /// );
   /// ```
-  Future<T?> navigateAndReopenAnchor<T extends Object?>(
-    Route<T> route, {
-    required Widget Function(T? result) sheetBuilder,
+  ///
+  /// Example with auto_route:
+  /// ```dart
+  /// final result = await context.navigateAndReopenAnchor(
+  ///   navigate: () => context.pushRoute(SelectionPageRoute()),
+  ///   sheetBuilder: (selectedValue) => MySheet(value: selectedValue),
+  ///   anchorKey: myButtonKey,
+  /// );
+  /// ```
+  Future<T?> navigateAndReopenAnchor<T extends Object?>({
+    required Future<T?> Function() navigate,
+    required Widget Function(T? value) sheetBuilder,
     GlobalKey? anchorKey,
     Duration dismissDelay = const Duration(milliseconds: 100),
     bool isScrollControlled = true,
@@ -153,24 +258,86 @@ extension AnchoredSheetContext on BuildContext {
     bool reopenOnlyIfResult = true,
   }) async {
     // Validate context and required parameters
-    if (!mounted) return null;
+    if (!mounted) {
+      AppLogger.w(
+        'Cannot navigate and reopen: context not mounted',
+        tag: 'AnchoredSheetContext',
+      );
+      return null;
+    }
 
     try {
-      // Dismiss any active sheets
-      dismissAnchoredSheet();
+      // Dismiss any active sheets with timeout protection
+      final dismissCompleter = Completer<void>();
+      final dismissTimer = Timer(const Duration(seconds: 2), () {
+        if (!dismissCompleter.isCompleted) {
+          AppLogger.w(
+            'Dismiss timeout reached, proceeding with navigation',
+            tag: 'AnchoredSheetContext',
+          );
+          dismissCompleter.complete();
+        }
+      });
+
+      unawaited(
+        dismissAnchoredSheet().then((_) {
+          if (!dismissCompleter.isCompleted) {
+            dismissCompleter.complete();
+          }
+          dismissTimer.cancel();
+        }),
+      );
+
+      await dismissCompleter.future;
 
       // Wait for dismissal to complete
       await Future<void>.delayed(dismissDelay);
 
-      //  Verify context is still valid and navigate
-      if (!mounted) return null;
+      // Verify context is still valid
+      if (!mounted) {
+        AppLogger.w(
+          'Context no longer mounted after dismiss delay',
+          tag: 'AnchoredSheetContext',
+        );
+        return null;
+      }
 
-      final navigationResult = await Navigator.push(this, route);
+      AppLogger.d(
+        'Navigating for sheet reopening',
+        tag: 'AnchoredSheetContext',
+      );
+
+      // Execute the navigation callback
+      T? navigationResult;
+      try {
+        navigationResult = await navigate();
+        AppLogger.d(
+          'Navigation completed with result: $navigationResult',
+          tag: 'AnchoredSheetContext',
+        );
+      } catch (e) {
+        AppLogger.e(
+          'Navigation callback failed',
+          error: e,
+          tag: 'AnchoredSheetContext',
+        );
+        return null;
+      }
 
       // Reopen sheet if we have a result (or always if configured)
-      if (!mounted) return navigationResult;
+      if (!mounted) {
+        AppLogger.w(
+          'Context no longer mounted after navigation',
+          tag: 'AnchoredSheetContext',
+        );
+        return navigationResult;
+      }
 
       if (navigationResult != null || !reopenOnlyIfResult) {
+        AppLogger.d(
+          'Reopening anchored sheet after navigation',
+          tag: 'AnchoredSheetContext',
+        );
         return anchoredSheet<T>(
           context: this,
           anchorKey: anchorKey,
@@ -185,8 +352,13 @@ extension AnchoredSheetContext on BuildContext {
       }
 
       return navigationResult;
-    } catch (e) {
-      debugPrint('Warning: Navigate and reopen sheet failed: $e');
+    } catch (e, stackTrace) {
+      AppLogger.e(
+        'Navigate and reopen sheet failed',
+        error: e,
+        stackTrace: stackTrace,
+        tag: 'AnchoredSheetContext',
+      );
       return null;
     }
   }
@@ -282,6 +454,7 @@ class AnchoredSheet extends StatefulWidget {
   State<AnchoredSheet> createState() => _AnchoredSheetState();
 }
 
+/// Enhanced AnchoredSheetState with performance monitoring
 class _AnchoredSheetState extends AnchoredSheetState<AnchoredSheet> {
   static const _childKeyDebugLabel = 'AnchoredSheet child';
   final GlobalKey _childKey = GlobalKey(debugLabel: _childKeyDebugLabel);
@@ -311,15 +484,21 @@ class _AnchoredSheetState extends AnchoredSheetState<AnchoredSheet> {
     _recalculateOffsetAndHeight();
 
     // Schedule animation for the next frame to ensure proper initialization
-    SchedulerBinding.instance.addPostFrameCallback((_) {
-      if (mounted && !dismissUnderway) {
-        try {
-          animateIn();
-        } catch (error) {
-          debugPrint('Animation error: $error');
+    SchedulerBinding.instance.addPostFrameCallback(
+      (_) {
+        if (mounted && !dismissUnderway) {
+          try {
+            animateIn();
+          } catch (error) {
+            AppLogger.e(
+              'Animation error during sheet initialization',
+              error: error,
+              tag: 'AnchoredSheetState',
+            );
+          }
         }
-      }
-    });
+      },
+    );
   }
 
   void _recalculateOffsetAndHeight() {
@@ -399,7 +578,7 @@ class _AnchoredSheetState extends AnchoredSheetState<AnchoredSheet> {
         widget.controller?.dismiss(result);
       }
     } catch (error) {
-      debugPrint('Dismissal error: $error');
+      AppLogger.e('Dismissal error', error: error, tag: 'AnchoredSheetState');
       // Ensure controller is still notified even if animation fails
       widget.controller?.dismiss(result);
     }
@@ -607,9 +786,10 @@ Future<T?> anchoredSheet<T>({
 
     // Handle duplicate anchor keys with immediate return (built-in behavior)
     if (anchorKey != null && anchorKey == currentAnchorKey) {
-      debugPrint(
-        '🔄 Duplicate anchor key detected - dismissing existing sheet '
-        '(key: $anchorKey)',
+      AppLogger.i(
+        'Duplicate anchor key detected - '
+        'dismissing existing sheet (key: $anchorKey)',
+        tag: 'AnchoredSheet',
       );
       currentController?.dismiss();
       return null; // Immediate return - no further processing
@@ -619,12 +799,18 @@ Future<T?> anchoredSheet<T>({
     // (built-in behavior)
     // Allow nesting when new sheet has no anchor key (non-anchored sheets)
     if (anchorKey != null && anchorKey != currentAnchorKey) {
-      debugPrint('🔄 Different anchor key - replacing existing sheet');
+      AppLogger.i(
+        'Different anchor key - replacing existing sheet',
+        tag: 'AnchoredSheet',
+      );
       currentController?.dismiss();
       // Small delay to allow dismissal to start
       await Future<void>.delayed(const Duration(milliseconds: 10));
     } else if (anchorKey == null) {
-      debugPrint('📚 Non-anchored sheet - allowing nesting on top of existing');
+      AppLogger.d(
+        'Non-anchored sheet - allowing nesting on top of existing',
+        tag: 'AnchoredSheet',
+      );
     }
   }
 
@@ -636,7 +822,10 @@ Future<T?> anchoredSheet<T>({
 
   // Check context is still mounted after async operations
   if (!capturedContext.mounted) {
-    debugPrint('❌ Context no longer mounted after async operations');
+    AppLogger.w(
+      'Context no longer mounted after async operations',
+      tag: 'AnchoredSheet',
+    );
     return null;
   }
 
@@ -645,7 +834,10 @@ Future<T?> anchoredSheet<T>({
   try {
     // Add ALL sheets to the stack for proper dismissal order
     // The stack handles both anchored and non-anchored sheets
-    debugPrint('✅ Creating new anchored sheet with key: $anchorKey');
+    AppLogger.d(
+      'Creating new anchored sheet with key: $anchorKey',
+      tag: 'AnchoredSheet',
+    );
     ActiveSheetTracker.setActive(controller, anchorKey);
 
     final overlayEntry = _createOverlayEntry<T>(
@@ -687,7 +879,11 @@ Future<T?> anchoredSheet<T>({
 
     return result;
   } catch (error) {
-    debugPrint('Error creating anchored sheet: $error');
+    AppLogger.e(
+      'Error creating anchored sheet',
+      error: error,
+      tag: 'AnchoredSheet',
+    );
     controller.dispose();
     return null;
   }
@@ -846,10 +1042,14 @@ Future<void> dismissAnchoredSheet<T extends Object?>([T? result]) async {
       }
     }
   } catch (e) {
-    debugPrint('Warning: Could not dismiss through context: $e');
+    AppLogger.w(
+      'Could not dismiss through context',
+      error: e,
+      tag: 'DismissAnchoredSheet',
+    );
   }
 
-  debugPrint('Warning: No active modal found to dismiss');
+  AppLogger.w('No active modal found to dismiss', tag: 'DismissAnchoredSheet');
 }
 
 /// Dismisses the TopModalSheet using BuildContext for provider-based dismissal.

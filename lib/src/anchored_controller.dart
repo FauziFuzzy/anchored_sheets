@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 
+import 'logger.dart';
+
 /// Simple static tracking for duplicate prevention
 ///
 /// This class provides minimal global state tracking
@@ -217,7 +219,11 @@ class ModalController<T> {
         });
       }
     } catch (error) {
-      debugPrint('Error dismissing modal: $error');
+      AppLogger.e(
+        'Error dismissing modal',
+        error: error,
+        tag: 'ModalController',
+      );
       // Still complete the completer to prevent hanging
       if (!_completer.isCompleted) {
         _completer.complete(result);
