@@ -152,15 +152,15 @@ Context-free dismissal function.
 
 ```dart
 // Dismiss with result
-dismissTopModalSheet('result_value');
+context.popAnchorSheet('result_value');
 
 // Dismiss without result
-dismissTopModalSheet();
+context.popAnchorSheet();
 
 // From anywhere in your app
 void someUtilityFunction() {
   // No BuildContext needed! 🎉
-  dismissTopModalSheet('closed_from_utility');
+  context.popAnchorSheet('closed_from_utility');
 }
 ```
 
