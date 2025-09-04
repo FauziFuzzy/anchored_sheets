@@ -223,7 +223,7 @@ extension AnchoredSheetContext on BuildContext {
   ///
   /// ## Features
   /// * 🔄 **Stack Management** - Automatically stacks sheets on the same anchor
-  /// * 🎯 **Same Position** - All sheets appear from the same anchor position  
+  /// * 🎯 **Same Position** - All sheets appear from the same anchor position
   /// * 📚 **Natural Navigation** - Each sheet stacks on top like pages
   /// * 🔄 **Return Values** - Each sheet can return different result types
   ///
@@ -825,7 +825,8 @@ class _AnchoredSheetState extends AnchoredSheetState<AnchoredSheet> {
 /// * [replaceSheet] - Auto-replace existing sheets (default: true)
 /// * [dismissOtherModals] - Dismiss other modals first (default: false)
 /// * [toggleOnDuplicate] - Enable smart duplicate prevention (default: true)
-/// * [enableNested] - Enable nested stacking for same anchor key (default: false)
+/// * [enableNested] - Enable nested stacking for same anchor key
+/// (default: false)
 ///
 /// ### Styling
 /// * [backgroundColor] - Background color of the sheet
