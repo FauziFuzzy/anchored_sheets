@@ -215,6 +215,109 @@ extension AnchoredSheetContext on BuildContext {
     }
   }
 
+  /// Shows nested anchored sheets using the same anchor key.
+  ///
+  /// This method enables stacking multiple sheets that will be shown
+  /// on top of each other, all anchored to the same position. Each sheet
+  /// stacks above the previous ones, creating a nested navigation flow.
+  ///
+  /// ## Features
+  /// * 🔄 **Stack Management** - Automatically stacks sheets on the same anchor
+  /// * 🎯 **Same Position** - All sheets appear from the same anchor position  
+  /// * 📚 **Natural Navigation** - Each sheet stacks on top like pages
+  /// * 🔄 **Return Values** - Each sheet can return different result types
+  ///
+  /// ## Example Usage
+  ///
+  /// ```dart
+  /// final GlobalKey buttonKey = GlobalKey();
+  ///
+  /// // Stack multiple sheets on the same button
+  /// final result1 = context.nestedAnchoredSheet<String>(
+  ///   anchorKey: buttonKey,
+  ///   builder: (context) => FirstSheet(),
+  /// );
+  ///
+  /// final result2 = context.nestedAnchoredSheet<int>(
+  ///   anchorKey: buttonKey,
+  ///   builder: (context) => SecondSheet(), // Stacks on top of first
+  /// );
+  ///
+  /// final result3 = context.nestedAnchoredSheet<bool>(
+  ///   anchorKey: buttonKey,
+  ///   builder: (context) => ThirdSheet(), // Stacks on top of second
+  /// );
+  /// ```
+  ///
+  /// ## Parameters
+  ///
+  /// All parameters are identical to [anchoredSheet] except:
+  /// * [anchorKey] is required for nested stacking
+  /// * [enableNested] is automatically set to true
+  ///
+  /// ## Returns
+  ///
+  /// A Future that completes when the sheet is shown and dismissed,
+  /// returning the value passed to dismissal or null.
+  Future<T?> nestedAnchoredSheet<T extends Object?>({
+    required GlobalKey anchorKey,
+    required WidgetBuilder builder,
+    Color? backgroundColor,
+    Color? shadowColor,
+    double? elevation,
+    ShapeBorder? shape,
+    Clip? clipBehavior,
+    BoxConstraints? constraints,
+    BorderRadius? borderRadius,
+    Color overlayColor = Colors.black54,
+    Duration animationDuration = const Duration(milliseconds: 300),
+    bool isDismissible = true,
+    bool isScrollControlled = false,
+    bool enableDrag = false,
+    bool? showDragHandle,
+    Color? dragHandleColor,
+    Size? dragHandleSize,
+    double? topOffset,
+    bool useSafeArea = false,
+  }) async {
+    if (!mounted) {
+      AppLogger.w(
+        'Cannot show nested sheet: context not mounted',
+        tag: 'AnchoredSheetContext',
+      );
+      return null;
+    }
+
+    AppLogger.d(
+      'Showing nested anchored sheet with key: $anchorKey',
+      tag: 'AnchoredSheetContext',
+    );
+
+    return anchoredSheet<T>(
+      context: this,
+      builder: builder,
+      anchorKey: anchorKey,
+      backgroundColor: backgroundColor,
+      shadowColor: shadowColor,
+      elevation: elevation,
+      shape: shape,
+      clipBehavior: clipBehavior,
+      constraints: constraints,
+      borderRadius: borderRadius,
+      overlayColor: overlayColor,
+      animationDuration: animationDuration,
+      isDismissible: isDismissible,
+      isScrollControlled: isScrollControlled,
+      enableDrag: enableDrag,
+      showDragHandle: showDragHandle,
+      dragHandleColor: dragHandleColor,
+      dragHandleSize: dragHandleSize,
+      topOffset: topOffset,
+      useSafeArea: useSafeArea,
+      enableNested: true, // Enable nested stacking
+    );
+  }
+
   /// Navigate to a screen and automatically
   /// reopen an anchored sheet with the result.
   ///
@@ -722,6 +825,7 @@ class _AnchoredSheetState extends AnchoredSheetState<AnchoredSheet> {
 /// * [replaceSheet] - Auto-replace existing sheets (default: true)
 /// * [dismissOtherModals] - Dismiss other modals first (default: false)
 /// * [toggleOnDuplicate] - Enable smart duplicate prevention (default: true)
+/// * [enableNested] - Enable nested stacking for same anchor key (default: false)
 ///
 /// ### Styling
 /// * [backgroundColor] - Background color of the sheet
@@ -775,12 +879,72 @@ Future<T?> anchoredSheet<T>({
   GlobalKey? anchorKey,
   double? topOffset,
   bool useSafeArea = false,
+  bool enableNested = false,
+}) async {
+  return anchoredSheetInternal<T>(
+    context: context,
+    builder: builder,
+    backgroundColor: backgroundColor,
+    shadowColor: shadowColor,
+    elevation: elevation,
+    shape: shape,
+    clipBehavior: clipBehavior,
+    constraints: constraints,
+    borderRadius: borderRadius,
+    overlayColor: overlayColor,
+    animationDuration: animationDuration,
+    isDismissible: isDismissible,
+    isScrollControlled: isScrollControlled,
+    enableDrag: enableDrag,
+    showDragHandle: showDragHandle,
+    dragHandleColor: dragHandleColor,
+    dragHandleSize: dragHandleSize,
+    anchorKey: anchorKey,
+    topOffset: topOffset,
+    useSafeArea: useSafeArea,
+    enableNested: enableNested,
+  );
+}
+
+/// Internal implementation of anchoredSheet with nested logic
+Future<T?> anchoredSheetInternal<T>({
+  required BuildContext context,
+  required WidgetBuilder builder,
+  Color? backgroundColor,
+  Color? shadowColor,
+  double? elevation,
+  ShapeBorder? shape,
+  Clip? clipBehavior,
+  BoxConstraints? constraints,
+  BorderRadius? borderRadius,
+  Color overlayColor = Colors.black54,
+  Duration animationDuration = const Duration(milliseconds: 300),
+  bool isDismissible = true,
+  bool isScrollControlled = false,
+  bool enableDrag = false,
+  bool? showDragHandle,
+  Color? dragHandleColor,
+  Size? dragHandleSize,
+  GlobalKey? anchorKey,
+  double? topOffset,
+  bool useSafeArea = false,
+  bool enableNested = false,
 }) async {
   // Capture context early to avoid async gap issues
   final capturedContext = context;
 
+  // Handle nested stacking if enabled
+  if (enableNested && anchorKey != null) {
+    AppLogger.d(
+      'Nested mode enabled for anchor key: $anchorKey - allowing stacking',
+      tag: 'AnchoredSheet',
+    );
+    // Skip duplicate prevention - allow nesting on same anchor key
+  }
+
   // Enhanced duplicate prevention - check immediately before any work
-  if (ActiveSheetTracker.hasActive) {
+  // Skip duplicate prevention if nested mode is enabled
+  if (ActiveSheetTracker.hasActive && !enableNested) {
     final currentController = ActiveSheetTracker.currentController;
     final currentAnchorKey = ActiveSheetTracker.currentAnchorKey;
 
@@ -812,6 +976,11 @@ Future<T?> anchoredSheet<T>({
         tag: 'AnchoredSheet',
       );
     }
+  } else if (enableNested) {
+    AppLogger.d(
+      'Nested mode active - allowing multiple sheets on same anchor key',
+      tag: 'AnchoredSheet',
+    );
   }
 
   // Handle dismissing other modals first (built-in behavior disabled)
