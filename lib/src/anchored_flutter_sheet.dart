@@ -174,7 +174,7 @@ extension AnchoredSheetContext on BuildContext {
 
       // Verify context is still valid and navigate
       if (!mounted) {
-        AppLogger.w(
+        AppLogger.d(
           'Context no longer mounted after dismiss delay',
           tag: 'AnchoredSheetContext',
         );
@@ -322,10 +322,14 @@ extension AnchoredSheetContext on BuildContext {
   /// reopen an anchored sheet with the result.
   ///
   /// This method provides a complete flow for selection patterns:
-  /// 1. Dismisses current anchored sheet
-  /// 2. Navigates using the provided navigation function
-  /// 3. Reopens the anchored sheet with the selected value
-  /// 4. Returns the final result from the reopened sheet
+  /// 1. Shows initial anchored sheet with null data
+  /// 2. Dismisses current anchored sheet when user proceeds
+  /// 3. Navigates using the provided navigation function
+  /// 4. Reopens the same anchored sheet with the navigation result
+  /// 5. Returns the final result from the reopened sheet
+  ///
+  /// The sheet builder receives null initially, then the navigation result.
+  /// Developers can handle both states in one builder function.
   ///
   /// Example with standard Route:
   /// ```dart
@@ -334,7 +338,9 @@ extension AnchoredSheetContext on BuildContext {
   ///     context,
   ///     MaterialPageRoute(builder: (context) => SelectionScreen()),
   ///   ),
-  ///   sheetBuilder: (selectedValue) => MySheet(value: selectedValue),
+  ///   sheetBuilder: (selectedValue) => selectedValue == null
+  ///     ? InitialSheetContent()
+  ///     : ResultSheetContent(value: selectedValue),
   ///   anchorKey: myButtonKey,
   /// );
   /// ```
@@ -343,14 +349,13 @@ extension AnchoredSheetContext on BuildContext {
   /// ```dart
   /// final result = await context.navigateAndReopenAnchor(
   ///   navigate: () => context.pushRoute(SelectionPageRoute()),
-  ///   sheetBuilder: (selectedValue) => MySheet(value: selectedValue),
+  ///   sheetBuilder: (data) => MySheet(navigationResult: data),
   ///   anchorKey: myButtonKey,
   /// );
   /// ```
   Future<T?> navigateAndReopenAnchor<T>({
     required Future<T?> Function() navigate,
-    required Widget Function(T? value) afterSheetBuilder,
-    Widget Function()? beforeSheetBuilder,
+    required Widget Function(T? navigationResult) sheetBuilder,
     GlobalKey? anchorKey,
     AnchoredSheetConfig? config,
   }) async {
@@ -362,9 +367,8 @@ extension AnchoredSheetContext on BuildContext {
       context: this,
       anchorKey: anchorKey,
       config: sheetConfig,
-      beforeSheetBuilder: beforeSheetBuilder,
       navigate: navigate,
-      afterSheetBuilder: afterSheetBuilder,
+      sheetBuilder: sheetBuilder,
     ).execute();
   }
 }
@@ -1193,25 +1197,21 @@ class _NavigationFlow<T extends Object?> {
   final BuildContext context;
   final GlobalKey? anchorKey;
   final AnchoredSheetConfig config;
-  final Widget Function()? beforeSheetBuilder;
   final Future<T?> Function() navigate;
-  final Widget Function(T? value) afterSheetBuilder;
+  final Widget Function(T? navigationResult) sheetBuilder;
 
   _NavigationFlow({
     required this.context,
     required this.anchorKey,
     required this.config,
-    required this.beforeSheetBuilder,
     required this.navigate,
-    required this.afterSheetBuilder,
+    required this.sheetBuilder,
   });
 
   Future<T?> execute() async {
     try {
-      if (beforeSheetBuilder != null) {
-        final result = await _showSheet(beforeSheetBuilder!());
-        if (result == null) return null;
-      }
+      final initialResult = await _showSheet(sheetBuilder(null));
+      if (initialResult == null) return null;
 
       await _dismissAndDelay();
       if (!context.mounted) return null;
@@ -1220,7 +1220,9 @@ class _NavigationFlow<T extends Object?> {
 
       if (!context.mounted) return navigationResult;
       if (navigationResult != null || !config.reopenOnlyIfResult) {
-        return _showSheet(afterSheetBuilder(navigationResult));
+        return _showSheet(
+          sheetBuilder(navigationResult),
+        );
       }
 
       return navigationResult;
