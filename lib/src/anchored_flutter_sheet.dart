@@ -347,123 +347,25 @@ extension AnchoredSheetContext on BuildContext {
   ///   anchorKey: myButtonKey,
   /// );
   /// ```
-  Future<T?> navigateAndReopenAnchor<T extends Object?>({
+  Future<T?> navigateAndReopenAnchor<T>({
     required Future<T?> Function() navigate,
-    required Widget Function(T? value) sheetBuilder,
+    required Widget Function(T? value) afterSheetBuilder,
+    Widget Function()? beforeSheetBuilder,
     GlobalKey? anchorKey,
-    Duration dismissDelay = const Duration(milliseconds: 100),
-    bool isScrollControlled = true,
-    bool showDragHandle = true,
-    bool useSafeArea = true,
-    bool enableDrag = true,
-    Color? backgroundColor,
-    bool isDismissible = true,
-    bool reopenOnlyIfResult = true,
+    AnchoredSheetConfig? config,
   }) async {
-    // Validate context and required parameters
-    if (!mounted) {
-      AppLogger.w(
-        'Cannot navigate and reopen: context not mounted',
-        tag: 'AnchoredSheetContext',
-      );
-      return null;
-    }
+    if (!mounted) return null;
 
-    try {
-      // Dismiss any active sheets with timeout protection
-      final dismissCompleter = Completer<void>();
-      final dismissTimer = Timer(const Duration(seconds: 2), () {
-        if (!dismissCompleter.isCompleted) {
-          AppLogger.w(
-            'Dismiss timeout reached, proceeding with navigation',
-            tag: 'AnchoredSheetContext',
-          );
-          dismissCompleter.complete();
-        }
-      });
+    final sheetConfig = config ?? const AnchoredSheetConfig();
 
-      unawaited(
-        dismissAnchoredSheet().then((_) {
-          if (!dismissCompleter.isCompleted) {
-            dismissCompleter.complete();
-          }
-          dismissTimer.cancel();
-        }),
-      );
-
-      await dismissCompleter.future;
-
-      // Wait for dismissal to complete
-      await Future<void>.delayed(dismissDelay);
-
-      // Verify context is still valid
-      if (!mounted) {
-        AppLogger.w(
-          'Context no longer mounted after dismiss delay',
-          tag: 'AnchoredSheetContext',
-        );
-        return null;
-      }
-
-      AppLogger.d(
-        'Navigating for sheet reopening',
-        tag: 'AnchoredSheetContext',
-      );
-
-      // Execute the navigation callback
-      T? navigationResult;
-      try {
-        navigationResult = await navigate();
-        AppLogger.d(
-          'Navigation completed with result: $navigationResult',
-          tag: 'AnchoredSheetContext',
-        );
-      } catch (e) {
-        AppLogger.e(
-          'Navigation callback failed',
-          error: e,
-          tag: 'AnchoredSheetContext',
-        );
-        return null;
-      }
-
-      // Reopen sheet if we have a result (or always if configured)
-      if (!mounted) {
-        AppLogger.w(
-          'Context no longer mounted after navigation',
-          tag: 'AnchoredSheetContext',
-        );
-        return navigationResult;
-      }
-
-      if (navigationResult != null || !reopenOnlyIfResult) {
-        AppLogger.d(
-          'Reopening anchored sheet after navigation',
-          tag: 'AnchoredSheetContext',
-        );
-        return anchoredSheet<T>(
-          context: this,
-          anchorKey: anchorKey,
-          isScrollControlled: isScrollControlled,
-          showDragHandle: showDragHandle,
-          useSafeArea: useSafeArea,
-          enableDrag: enableDrag,
-          backgroundColor: backgroundColor,
-          isDismissible: isDismissible,
-          builder: (context) => sheetBuilder(navigationResult),
-        );
-      }
-
-      return navigationResult;
-    } catch (e, stackTrace) {
-      AppLogger.e(
-        'Navigate and reopen sheet failed',
-        error: e,
-        stackTrace: stackTrace,
-        tag: 'AnchoredSheetContext',
-      );
-      return null;
-    }
+    return _NavigationFlow<T>(
+      context: this,
+      anchorKey: anchorKey,
+      config: sheetConfig,
+      beforeSheetBuilder: beforeSheetBuilder,
+      navigate: navigate,
+      afterSheetBuilder: afterSheetBuilder,
+    ).execute();
   }
 }
 
@@ -1261,4 +1163,104 @@ Future<void> dismissAnchoredSheetWithContext<T extends Object?>(
 ]) async {
   // Use the new context-based method
   context.popAnchorSheet(result);
+}
+
+/// Configuration class for anchored sheets to reduce parameter repetition
+class AnchoredSheetConfig {
+  final Duration dismissDelay;
+  final bool isScrollControlled;
+  final bool showDragHandle;
+  final bool useSafeArea;
+  final bool enableDrag;
+  final Color? backgroundColor;
+  final bool isDismissible;
+  final bool reopenOnlyIfResult;
+
+  const AnchoredSheetConfig({
+    this.dismissDelay = const Duration(milliseconds: 100),
+    this.isScrollControlled = true,
+    this.showDragHandle = true,
+    this.useSafeArea = true,
+    this.enableDrag = true,
+    this.backgroundColor,
+    this.isDismissible = true,
+    this.reopenOnlyIfResult = true,
+  });
+}
+
+/// Helper class to handle the navigation flow logic
+class _NavigationFlow<T extends Object?> {
+  final BuildContext context;
+  final GlobalKey? anchorKey;
+  final AnchoredSheetConfig config;
+  final Widget Function()? beforeSheetBuilder;
+  final Future<T?> Function() navigate;
+  final Widget Function(T? value) afterSheetBuilder;
+
+  _NavigationFlow({
+    required this.context,
+    required this.anchorKey,
+    required this.config,
+    required this.beforeSheetBuilder,
+    required this.navigate,
+    required this.afterSheetBuilder,
+  });
+
+  Future<T?> execute() async {
+    try {
+      if (beforeSheetBuilder != null) {
+        final result = await _showSheet(beforeSheetBuilder!());
+        if (result == null) return null;
+      }
+
+      await _dismissAndDelay();
+      if (!context.mounted) return null;
+
+      final navigationResult = await _executeNavigation();
+
+      if (!context.mounted) return navigationResult;
+      if (navigationResult != null || !config.reopenOnlyIfResult) {
+        return _showSheet(afterSheetBuilder(navigationResult));
+      }
+
+      return navigationResult;
+    } catch (e, stackTrace) {
+      AppLogger.e(
+        'Navigate and reopen sheet failed',
+        error: e,
+        stackTrace: stackTrace,
+        tag: 'NavigationFlow',
+      );
+      return null;
+    }
+  }
+
+  Future<T?> _showSheet(Widget child) => anchoredSheet<T>(
+        context: context,
+        anchorKey: anchorKey,
+        isScrollControlled: config.isScrollControlled,
+        showDragHandle: config.showDragHandle,
+        useSafeArea: config.useSafeArea,
+        enableDrag: config.enableDrag,
+        backgroundColor: config.backgroundColor,
+        isDismissible: config.isDismissible,
+        builder: (context) => child,
+      );
+
+  Future<void> _dismissAndDelay() async {
+    await Future<void>.delayed(config.dismissDelay);
+  }
+
+  Future<T?> _executeNavigation() async {
+    try {
+      return await navigate();
+    } catch (e) {
+      AppLogger.e(
+        'Navigation callback failed',
+        error: e,
+        tag: 'NavigationFlow',
+      );
+      return null;
+    }
+  }
 }
