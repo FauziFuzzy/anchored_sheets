@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [1.2.15] - 2025-09-6
 - Fix issue where if user back on screen then reselect again button
+- Added AnchoredRouteObserver it need to add on navigatorsObserver to handle dismisible.
 
 ## [1.2.14] - 2025-09-5
 - Create class to simplify repetitive properties on popAnchoreAndNavigate.

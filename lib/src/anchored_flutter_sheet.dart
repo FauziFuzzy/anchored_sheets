@@ -78,6 +78,9 @@ import 'package:flutter/scheduler.dart';
 
 import 'src.dart';
 
+final AnchoredSheetRouteObserver anchoredObserver =
+    AnchoredSheetRouteObserver();
+
 /// Enhanced extension methods for BuildContext to provide
 /// convenient anchored sheet operations with improved error handling
 extension AnchoredSheetContext on BuildContext {
@@ -309,12 +312,10 @@ class AnchoredSheet extends StatefulWidget {
   State<AnchoredSheet> createState() => _AnchoredSheetState();
 }
 
-/// Enhanced AnchoredSheetState with improved Flutter lifecycle management
+/// Enhanced AnchoredSheetState with RouteObserver auto-dismiss
 class _AnchoredSheetState extends AnchoredSheetState<AnchoredSheet> {
   static const _childKeyDebugLabel = 'AnchoredSheet child';
   final GlobalKey _childKey = GlobalKey(debugLabel: _childKeyDebugLabel);
-
-  bool get dismissUnderway => controller.status == AnimationStatus.reverse;
 
   double? _cachedTopOffset;
   double? _cachedModalHeight;
@@ -324,16 +325,22 @@ class _AnchoredSheetState extends AnchoredSheetState<AnchoredSheet> {
     super.initState();
     // Use Flutter's built-in controller management
     widget.controller?.setStateCallback(_updateState);
+
+    // Register controller with RouteObserver for auto-dismiss
+    if (widget.controller != null) {
+      anchoredObserver.registerController(widget.controller!);
+    }
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+
     _recalculateOffsetAndHeight();
 
     // Use Flutter's built-in post-frame callback for proper initialization
     SchedulerBinding.instance.addPostFrameCallback((_) {
-      if (mounted && !dismissUnderway) {
+      if (mounted) {
         try {
           animateIn();
         } catch (error, stackTrace) {
@@ -372,12 +379,15 @@ class _AnchoredSheetState extends AnchoredSheetState<AnchoredSheet> {
 
   @override
   void dispose() {
+    // Unregister controller from RouteObserver
+    if (widget.controller != null) {
+      anchoredObserver.unregisterController(widget.controller!);
+    }
+
     // Use Flutter's built-in cleanup pattern
     widget.controller?.setStateCallback(null);
     super.dispose();
   }
-
-  Future<void> dismissModal() => animateOut();
 
   void _updateState() {
     // Use Flutter's built-in state update pattern
@@ -433,35 +443,6 @@ class _AnchoredSheetState extends AnchoredSheetState<AnchoredSheet> {
     );
   }
 
-  Future<void> _dismiss<T extends Object?>([T? result]) async {
-    if (!mounted || dismissUnderway) return;
-
-    try {
-      await dismissModal();
-      if (mounted) {
-        widget.controller?.dismiss(result);
-      }
-    } catch (error, stackTrace) {
-      // Use Flutter's built-in error reporting
-      FlutterError.reportError(
-        FlutterErrorDetails(
-          exception: error,
-          stack: stackTrace,
-          library: 'anchored_sheets',
-          context: ErrorDescription('Dismissal error'),
-        ),
-      );
-      AppLogger.e(
-        'Dismissal error',
-        error: error,
-        stackTrace: stackTrace,
-        tag: 'AnchoredSheetState',
-      );
-      // Ensure controller is still notified even if animation fails
-      widget.controller?.dismiss(result);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     super.build(context); // Required for AutomaticKeepAliveClientMixin
@@ -512,7 +493,7 @@ class _AnchoredSheetState extends AnchoredSheetState<AnchoredSheet> {
             buildDismissibleOverlay(
               topOffset: calculatedTopOffset,
               fadeAnimation: fadeAnimation,
-              onTap: _dismiss,
+              onTap: animateOut,
               overlayColor: widget.overlayColor,
             ),
           buildPositionedModal(
@@ -521,7 +502,6 @@ class _AnchoredSheetState extends AnchoredSheetState<AnchoredSheet> {
             child: gestureDetector,
             slideAnimation: slideAnimation,
             fadeAnimation: fadeAnimation,
-            onDismiss: _dismiss,
             backgroundColor: widget.backgroundColor,
             shape: widget.shape,
             isScrollControlled: widget.isScrollControlled,

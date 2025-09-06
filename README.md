@@ -25,6 +25,22 @@ flutter pub get
 
 ## 🚀 Quick Start
 
+### Add AnchoredObserver
+
+add anchoredObserver on materialApp
+
+```dart
+   return MaterialApp(
+      title: 'Anchored Sheets Demo',
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+        useMaterial3: true,
+      ),
+      navigatorObservers: [anchoredObserver],
+      home: const AnchoredSheetsDemo(),
+    );
+```
+
 ### Basic Usage
 
 ```dart
