@@ -110,10 +110,19 @@ extension AnchoredSheetContext on BuildContext {
         );
         return false;
       }
-    } catch (e, stackTrace) {
+    } catch (error, stackTrace) {
+      // Use Flutter's built-in error reporting
+      FlutterError.reportError(
+        FlutterErrorDetails(
+          exception: error,
+          stack: stackTrace,
+          library: 'anchored_sheets',
+          context: ErrorDescription('Failed to dismiss anchored sheet'),
+        ),
+      );
       AppLogger.e(
         'Failed to dismiss anchored sheet',
-        error: e,
+        error: error,
         stackTrace: stackTrace,
         tag: 'AnchoredSheetContext',
       );
@@ -127,12 +136,23 @@ extension AnchoredSheetContext on BuildContext {
   /// This method provides a way to check sheet status without
   /// attempting dismissal.
   bool get hasActiveAnchorSheet {
+    // Use Flutter's built-in error handling with try-catch
     try {
       return AnchoredSheetPop.of(this) != null || ActiveSheetTracker.hasActive;
-    } catch (e) {
+    } catch (error, stackTrace) {
+      // Use Flutter's built-in error reporting
+      FlutterError.reportError(
+        FlutterErrorDetails(
+          exception: error,
+          stack: stackTrace,
+          library: 'anchored_sheets',
+          context: ErrorDescription('Error checking active sheet status'),
+        ),
+      );
       AppLogger.w(
         'Error checking active sheet status',
-        error: e,
+        error: error,
+        stackTrace: stackTrace,
         tag: 'AnchoredSheetContext',
       );
       return false;
@@ -289,7 +309,7 @@ class AnchoredSheet extends StatefulWidget {
   State<AnchoredSheet> createState() => _AnchoredSheetState();
 }
 
-/// Enhanced AnchoredSheetState with performance monitoring
+/// Enhanced AnchoredSheetState with improved Flutter lifecycle management
 class _AnchoredSheetState extends AnchoredSheetState<AnchoredSheet> {
   static const _childKeyDebugLabel = 'AnchoredSheet child';
   final GlobalKey _childKey = GlobalKey(debugLabel: _childKeyDebugLabel);
@@ -302,15 +322,8 @@ class _AnchoredSheetState extends AnchoredSheetState<AnchoredSheet> {
   @override
   void initState() {
     super.initState();
+    // Use Flutter's built-in controller management
     widget.controller?.setStateCallback(_updateState);
-  }
-
-  void _updateState() {
-    if (mounted) {
-      SchedulerBinding.instance.addPostFrameCallback((_) {
-        if (mounted) setState(() {});
-      });
-    }
   }
 
   @override
@@ -318,32 +331,32 @@ class _AnchoredSheetState extends AnchoredSheetState<AnchoredSheet> {
     super.didChangeDependencies();
     _recalculateOffsetAndHeight();
 
-    // Schedule animation for the next frame to ensure proper initialization
-    SchedulerBinding.instance.addPostFrameCallback(
-      (_) {
-        if (mounted && !dismissUnderway) {
-          try {
-            animateIn();
-          } catch (error) {
-            AppLogger.e(
-              'Animation error during sheet initialization',
-              error: error,
-              tag: 'AnchoredSheetState',
-            );
-          }
+    // Use Flutter's built-in post-frame callback for proper initialization
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      if (mounted && !dismissUnderway) {
+        try {
+          animateIn();
+        } catch (error, stackTrace) {
+          // Use Flutter's built-in error handling
+          FlutterError.reportError(
+            FlutterErrorDetails(
+              exception: error,
+              stack: stackTrace,
+              library: 'anchored_sheets',
+              context: ErrorDescription(
+                'Animation error during sheet initialization',
+              ),
+            ),
+          );
+          AppLogger.e(
+            'Animation error during sheet initialization',
+            error: error,
+            stackTrace: stackTrace,
+            tag: 'AnchoredSheetState',
+          );
         }
-      },
-    );
-  }
-
-  void _recalculateOffsetAndHeight() {
-    _cachedTopOffset = calculateTopOffset(
-      anchorKey: widget.anchorKey,
-      topOffset: widget.topOffset,
-      context: context,
-      respectStatusBar: widget.isScrollControlled,
-    );
-    _updateCachedValues();
+      }
+    });
   }
 
   @override
@@ -355,6 +368,32 @@ class _AnchoredSheetState extends AnchoredSheetState<AnchoredSheet> {
     } else if (_shouldUpdateCachedValues(oldWidget)) {
       _updateCachedValues();
     }
+  }
+
+  @override
+  void dispose() {
+    // Use Flutter's built-in cleanup pattern
+    widget.controller?.setStateCallback(null);
+    super.dispose();
+  }
+
+  Future<void> dismissModal() => animateOut();
+
+  void _updateState() {
+    // Use Flutter's built-in state update pattern
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  void _recalculateOffsetAndHeight() {
+    _cachedTopOffset = calculateTopOffset(
+      anchorKey: widget.anchorKey,
+      topOffset: widget.topOffset,
+      context: context,
+      respectStatusBar: widget.isScrollControlled,
+    );
+    _updateCachedValues();
   }
 
   bool _shouldRecalculateOffset(AnchoredSheet oldWidget) {
@@ -378,22 +417,12 @@ class _AnchoredSheetState extends AnchoredSheetState<AnchoredSheet> {
         oldWidget.enableDrag != widget.enableDrag;
   }
 
-  @override
-  void dispose() {
-    // Clear the state callback before disposing
-    widget.controller?.setStateCallback(null);
-
-    // Call super.dispose() which handles animation controller cleanup
-    super.dispose();
-  }
-
-  Future<void> dismissModal() => animateOut();
-
   void _updateCachedValues() {
     final topOffset = _cachedTopOffset;
     if (topOffset == null) return;
 
-    final screenHeight = MediaQuery.of(context).size.height;
+    final screenHeight =
+        MediaQuery.sizeOf(context).height; // Use Flutter's built-in MediaQuery
     final availableHeight = screenHeight - topOffset;
 
     _cachedModalHeight = calculateModalHeight(
@@ -412,8 +441,22 @@ class _AnchoredSheetState extends AnchoredSheetState<AnchoredSheet> {
       if (mounted) {
         widget.controller?.dismiss(result);
       }
-    } catch (error) {
-      AppLogger.e('Dismissal error', error: error, tag: 'AnchoredSheetState');
+    } catch (error, stackTrace) {
+      // Use Flutter's built-in error reporting
+      FlutterError.reportError(
+        FlutterErrorDetails(
+          exception: error,
+          stack: stackTrace,
+          library: 'anchored_sheets',
+          context: ErrorDescription('Dismissal error'),
+        ),
+      );
+      AppLogger.e(
+        'Dismissal error',
+        error: error,
+        stackTrace: stackTrace,
+        tag: 'AnchoredSheetState',
+      );
       // Ensure controller is still notified even if animation fails
       widget.controller?.dismiss(result);
     }
@@ -780,10 +823,20 @@ Future<T?> anchoredSheetInternal<T>({
     controller.dispose();
 
     return result;
-  } catch (error) {
+  } catch (error, stackTrace) {
+    // Use Flutter's built-in error reporting
+    FlutterError.reportError(
+      FlutterErrorDetails(
+        exception: error,
+        stack: stackTrace,
+        library: 'anchored_sheets',
+        context: ErrorDescription('Error creating anchored sheet'),
+      ),
+    );
     AppLogger.e(
       'Error creating anchored sheet',
       error: error,
+      stackTrace: stackTrace,
       tag: 'AnchoredSheet',
     );
     controller.dispose();
@@ -973,11 +1026,14 @@ class AnchoredSheetConfig {
     this.enableDrag = true,
     this.backgroundColor,
     this.isDismissible = true,
-    this.reopenOnlyIfResult = true,
+    // By default reopen the sheet after navigation completes (even when
+    // navigation returned null, e.g. user pressed back). Set this to true
+    // to only reopen when a non-null result is returned.
+    this.reopenOnlyIfResult = false,
   });
 }
 
-/// Simplified navigation flow using Flutter best practices
+/// Enhanced navigation flow using Flutter's built-in lifecycle management
 class _NavigationFlow<T extends Object?> {
   final BuildContext context;
   final GlobalKey? anchorKey;
@@ -995,65 +1051,155 @@ class _NavigationFlow<T extends Object?> {
   });
 
   Future<T?> execute() async {
-    final completer = Completer<T?>();
+    // Use Flutter's built-in error handling with try-catch
+    try {
+      final completer = Completer<T?>();
 
-    // Show initial sheet
-    _showSheet(null, completer);
+      // Show initial sheet with proper lifecycle management
+      // _isNavigating prevents the initial dismissal (that triggers
+      // navigation) from completing the returned Future. Only the
+      // final (reopened) sheet will complete the completer.
+      _isNavigating = false;
+      _isReopened = false;
+      _showSheet(
+        null,
+        completer,
+      );
 
-    return completer.future;
+      return completer.future;
+    } catch (e, stackTrace) {
+      AppLogger.e(
+        'Navigation flow failed',
+        error: e,
+        stackTrace: stackTrace,
+        tag: 'NavigationFlow',
+      );
+      return null;
+    }
   }
 
+  bool _isNavigating = false;
+  bool _isReopened = false;
+
   void _showSheet(T? navigationResult, Completer<T?> completer) {
-    anchoredSheet<T>(
-      context: context,
-      anchorKey: anchorKey,
-      isScrollControlled: config.isScrollControlled,
-      showDragHandle: config.showDragHandle,
-      useSafeArea: config.useSafeArea,
-      enableDrag: config.enableDrag,
-      backgroundColor: config.backgroundColor,
-      isDismissible: config.isDismissible,
-      builder: (context) => sheetBuilder(
-        navigationResult,
-        () async => _handleNavigation(completer),
+    // Use Flutter's built-in async pattern with proper error handling
+    unawaited(
+      anchoredSheet<T>(
+        context: context,
+        anchorKey: anchorKey,
+        isScrollControlled: config.isScrollControlled,
+        showDragHandle: config.showDragHandle,
+        useSafeArea: config.useSafeArea,
+        enableDrag: config.enableDrag,
+        backgroundColor: config.backgroundColor,
+        isDismissible: config.isDismissible,
+        builder: (context) => sheetBuilder(
+          navigationResult,
+          () => _handleNavigation(completer),
+        ),
+      ).then(
+        (result) {
+          // Only complete the returned Future for the final (reopened)
+          // sheet or for an initial sheet that was dismissed without
+          // starting navigation. If navigation is in progress we suppress
+          // completion because the flow will reopen the sheet later.
+          final wasReopened = _isReopened;
+          final navigationInProgress = _isNavigating;
+
+          if (wasReopened || !navigationInProgress) {
+            if (!completer.isCompleted) {
+              completer.complete(result);
+            }
+          } else {
+            // Suppress completion - we're in the middle of navigate() -> reopen
+            AppLogger.d(
+              'Suppressed premature completion during navigation',
+              tag: 'NavigationFlow',
+            );
+          }
+        },
+        onError: (Object error, StackTrace stackTrace) {
+          AppLogger.e(
+            'Sheet display failed',
+            error: error,
+            stackTrace: stackTrace,
+            tag: 'NavigationFlow',
+          );
+          if (!completer.isCompleted) {
+            completer.completeError(error, stackTrace);
+          }
+        },
       ),
-    ).then((result) {
-      // Only complete if not already completed (user clicked Close)
-      if (!completer.isCompleted) {
-        completer.complete(result);
-      }
-    });
+    );
   }
 
   Future<void> _handleNavigation(Completer<T?> completer) async {
+    // Use Flutter's built-in async error handling
     try {
-      // Dismiss current sheet before navigation
-      if (ActiveSheetTracker.hasActive) {
-        ActiveSheetTracker.currentController?.dismiss();
-        ActiveSheetTracker.clear();
+      // Prevent concurrent navigations from the same sheet
+      if (_isNavigating) return;
+      _isNavigating = true;
+
+      // Dismiss current sheet before navigation. Prefer awaiting the
+      // topmost controller's future instead of an arbitrary delay so we
+      // coordinate with the actual dismissal lifecycle.
+      final topController = ActiveSheetTracker.topmostController;
+      if (topController != null && !topController.isDisposed) {
+        try {
+          topController.dismiss();
+          // Wait for the controller future to complete, but guard with a
+          // timeout in case something goes wrong with the overlay lifecycle.
+          await topController.future.timeout(
+            const Duration(milliseconds: 600),
+            onTimeout: () => Future<void>.value(),
+          );
+        } catch (_) {
+          // Fallback: brief delay to allow animations to start
+          await Future<void>.delayed(const Duration(milliseconds: 150));
+        }
       }
 
-      // Wait for dismissal animation
-      // await Future<void>.delayed(const Duration(milliseconds: 150));
+      // Clear tracker only if it still references the dismissed controller
+      // (removeFromStack will keep stack integrity)
+      final controllerToRemove =
+          topController ?? ActiveSheetTracker.currentController;
+      if (controllerToRemove != null) {
+        ActiveSheetTracker.removeFromStack(controllerToRemove);
+      }
 
+      // If context is gone, complete with null
       if (!context.mounted) {
         if (!completer.isCompleted) completer.complete(null);
+        _isNavigating = false;
         return;
       }
 
-      // Execute navigation
+      // Execute navigation with Flutter's built-in error propagation
       final navigationResult = await navigate();
 
-      if (!context.mounted) {
-        if (!completer.isCompleted) completer.complete(navigationResult);
+      // If the caller configured to only reopen when navigation returns a
+      // non-null result, respect that policy.
+      if (navigationResult == null && config.reopenOnlyIfResult) {
+        if (!completer.isCompleted) completer.complete(null);
+        _isNavigating = false;
         return;
       }
 
       // Show sheet again with navigation result
+      _isReopened = true;
+      _isNavigating = false;
       _showSheet(navigationResult, completer);
-    } catch (e) {
-      AppLogger.e('Navigation failed', error: e, tag: 'NavigationFlow');
-      if (!completer.isCompleted) completer.complete(null);
+    } catch (e, stackTrace) {
+      // Use Flutter's built-in error handling
+      AppLogger.e(
+        'Navigation failed',
+        error: e,
+        stackTrace: stackTrace,
+        tag: 'NavigationFlow',
+      );
+      if (!completer.isCompleted) {
+        completer.completeError(e, stackTrace);
+      }
     }
   }
 }
