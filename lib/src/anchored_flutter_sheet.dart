@@ -977,7 +977,7 @@ class AnchoredSheetConfig {
   });
 }
 
-/// Helper class to handle the navigation flow logic
+/// Simplified navigation flow using Flutter best practices
 class _NavigationFlow<T extends Object?> {
   final BuildContext context;
   final GlobalKey? anchorKey;
@@ -995,42 +995,46 @@ class _NavigationFlow<T extends Object?> {
   });
 
   Future<T?> execute() async {
-    try {
-      // Show initial sheet and keep it open during navigation
-      final completer = Completer<T?>();
+    final completer = Completer<T?>();
 
-      // Show the sheet without waiting for dismissal
-      await _showSheet(
-        _NavigationSheetWrapper<T>(
-          initialBuilder: () =>
-              sheetBuilder(null, () async => _handleNavigation(completer)),
-          onNavigate: () async => _handleNavigation(completer),
-          completer: completer,
-        ),
-      );
+    // Show initial sheet
+    _showSheet(null, completer);
 
-      return completer.future;
-    } catch (e, stackTrace) {
-      AppLogger.e(
-        'Navigate and persist sheet failed',
-        error: e,
-        stackTrace: stackTrace,
-        tag: 'NavigationFlow',
-      );
-      return null;
-    }
+    return completer.future;
+  }
+
+  void _showSheet(T? navigationResult, Completer<T?> completer) {
+    anchoredSheet<T>(
+      context: context,
+      anchorKey: anchorKey,
+      isScrollControlled: config.isScrollControlled,
+      showDragHandle: config.showDragHandle,
+      useSafeArea: config.useSafeArea,
+      enableDrag: config.enableDrag,
+      backgroundColor: config.backgroundColor,
+      isDismissible: config.isDismissible,
+      builder: (context) => sheetBuilder(
+        navigationResult,
+        () async => _handleNavigation(completer),
+      ),
+    ).then((result) {
+      // Only complete if not already completed (user clicked Close)
+      if (!completer.isCompleted) {
+        completer.complete(result);
+      }
+    });
   }
 
   Future<void> _handleNavigation(Completer<T?> completer) async {
     try {
-      // Dismiss the sheet before navigation so the new screen appears on top
+      // Dismiss current sheet before navigation
       if (ActiveSheetTracker.hasActive) {
         ActiveSheetTracker.currentController?.dismiss();
         ActiveSheetTracker.clear();
       }
 
-      // Wait for sheet dismissal animation
-      await Future<void>.delayed(const Duration(milliseconds: 150));
+      // Wait for dismissal animation
+      // await Future<void>.delayed(const Duration(milliseconds: 150));
 
       if (!context.mounted) {
         if (!completer.isCompleted) completer.complete(null);
@@ -1038,81 +1042,18 @@ class _NavigationFlow<T extends Object?> {
       }
 
       // Execute navigation
-      final navigationResult = await _executeNavigation();
+      final navigationResult = await navigate();
 
       if (!context.mounted) {
         if (!completer.isCompleted) completer.complete(navigationResult);
         return;
       }
 
-      // Show the sheet again with the navigation result
-      final result = await _showSheet(
-        sheetBuilder(
-          navigationResult,
-          () async {
-            // For "Navigate Again", we need to restart the navigation flow
-            // Complete the current completer and start a new flow
-            if (!completer.isCompleted) completer.complete(null);
-            // Start a new navigation flow
-            final newCompleter = Completer<T?>();
-            _handleNavigation(newCompleter);
-          },
-        ),
-      );
-      if (!completer.isCompleted) completer.complete(result);
-    } catch (e, stackTrace) {
-      AppLogger.e(
-        'Navigation handling failed',
-        error: e,
-        stackTrace: stackTrace,
-        tag: 'NavigationFlow',
-      );
+      // Show sheet again with navigation result
+      _showSheet(navigationResult, completer);
+    } catch (e) {
+      AppLogger.e('Navigation failed', error: e, tag: 'NavigationFlow');
       if (!completer.isCompleted) completer.complete(null);
     }
   }
-
-  Future<T?> _showSheet(Widget child) => anchoredSheet<T>(
-        context: context,
-        anchorKey: anchorKey,
-        isScrollControlled: config.isScrollControlled,
-        showDragHandle: config.showDragHandle,
-        useSafeArea: config.useSafeArea,
-        enableDrag: config.enableDrag,
-        backgroundColor: config.backgroundColor,
-        isDismissible: config.isDismissible,
-        builder: (context) => child,
-      );
-
-  Future<T?> _executeNavigation() async {
-    try {
-      return await navigate();
-    } catch (e) {
-      AppLogger.e(
-        'Navigation callback failed',
-        error: e,
-        tag: 'NavigationFlow',
-      );
-      return null;
-    }
-  }
-}
-
-/// Wrapper widget to handle navigation flow from within the sheet
-class _NavigationSheetWrapper<T> extends StatelessWidget {
-  final Widget Function() initialBuilder;
-  final Future<void> Function() onNavigate;
-  final Completer<T?> completer;
-
-  const _NavigationSheetWrapper({
-    required this.initialBuilder,
-    required this.onNavigate,
-    required this.completer,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return initialBuilder();
-  }
-
-  Future<void> navigate() => onNavigate();
 }
