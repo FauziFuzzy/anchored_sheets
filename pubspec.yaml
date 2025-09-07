@@ -1,7 +1,7 @@
 name: anchored_sheets
 description: "A Flutter package to create anchored sheets that can be dragged
   and snapped to different positions on the screen."
-version: 1.2.15
+version: 1.2.16
 homepage: https://github.com/FauziFuzzy/anchored_sheets
 repository: https://github.com/FauziFuzzy/anchored_sheets
 
