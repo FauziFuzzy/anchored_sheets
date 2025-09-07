@@ -81,9 +81,65 @@ import 'src.dart';
 final AnchoredSheetRouteObserver anchoredObserver =
     AnchoredSheetRouteObserver();
 
+/// Navigation provider that can be accessed from within sheet builders
+class AnchoredSheetNavigationProvider extends InheritedWidget {
+  const AnchoredSheetNavigationProvider({
+    super.key,
+    required this.onNavigate,
+    required this.canNavigate,
+    required super.child,
+  });
+
+  final VoidCallback? onNavigate;
+  final bool canNavigate;
+
+  static AnchoredSheetNavigationProvider? maybeOf(BuildContext context) {
+    return context
+        .dependOnInheritedWidgetOfExactType<AnchoredSheetNavigationProvider>();
+  }
+
+  static AnchoredSheetNavigationProvider of(BuildContext context) {
+    final result = maybeOf(context);
+    assert(
+      result != null,
+      'No AnchoredSheetNavigationProvider found in context',
+    );
+    return result!;
+  }
+
+  @override
+  bool updateShouldNotify(AnchoredSheetNavigationProvider oldWidget) {
+    return onNavigate != oldWidget.onNavigate ||
+        canNavigate != oldWidget.canNavigate;
+  }
+}
+
 /// Enhanced extension methods for BuildContext to provide
 /// convenient anchored sheet operations with improved error handling
 extension AnchoredSheetContext on BuildContext {
+  /// Trigger navigation from within a sheet builder
+  ///
+  /// This method can be called from any widget inside the sheet builder
+  /// to automatically trigger the navigation flow without needing to pass
+  /// callbacks through the widget tree.
+  ///
+  /// Returns `true` if navigation was triggered, `false` if no navigation
+  /// provider found.
+  bool triggerSheetNavigation() {
+    final provider = AnchoredSheetNavigationProvider.maybeOf(this);
+    if (provider?.canNavigate == true && provider?.onNavigate != null) {
+      provider!.onNavigate!();
+      return true;
+    }
+    return false;
+  }
+
+  /// Check if navigation is available from within this sheet
+  bool get canNavigateFromSheet {
+    final provider = AnchoredSheetNavigationProvider.maybeOf(this);
+    return provider?.canNavigate == true;
+  }
+
   /// Hide the current anchored sheet with enhanced error handling
   ///
   /// Returns `true` if a sheet was successfully dismissed, `false` otherwise.
@@ -203,8 +259,11 @@ extension AnchoredSheetContext on BuildContext {
   /// ```
   Future<T?> navigateAndReopenAnchor<T>({
     required Future<T?> Function() navigate,
-    required Widget Function(T? navigationResult, VoidCallback? onNavigate)
-        sheetBuilder,
+    required Widget Function(
+      BuildContext context,
+      T? navigationResult,
+      VoidCallback? onNavigate,
+    ) sheetBuilder,
     GlobalKey? anchorKey,
     AnchoredSheetConfig? config,
   }) async {
@@ -537,14 +596,25 @@ class _AnchoredSheetState extends AnchoredSheetState<AnchoredSheet> {
 /// behaviors are built into the library, requiring no additional parameters or
 /// state management from the developer.
 ///
-/// ## Example Usage
+/// ## Example Usage (Updated with Navigation Support!)
 ///
 /// ```dart
 /// final GlobalKey buttonKey = GlobalKey();
 ///
-/// // Basic usage
+/// // Basic usage (no navigation)
 /// anchoredSheet(
 ///   context: context,
+///   builder: (context) => YourSheetContent(),
+/// );
+///
+/// // NEW: Sheet with navigation (unified API)
+/// anchoredSheet<String>(
+///   context: context,
+///   anchorKey: buttonKey,
+///   navigate: () => Navigator.push(
+///     context,
+///     MaterialPageRoute(builder: (context) => SelectionScreen()),
+///   ),
 ///   builder: (context) => YourSheetContent(),
 /// );
 ///
@@ -554,13 +624,6 @@ class _AnchoredSheetState extends AnchoredSheetState<AnchoredSheet> {
 ///   anchorKey: buttonKey,
 ///   builder: (context) => MenuContent(),
 /// );
-///
-/// // With smart replacement and modal management
-/// anchoredSheet(
-///   context: context,
-///   anchorKey: buttonKey,
-///   dismissOtherModals: true,
-///   replaceSheet: true, // Default
 ///   builder: (context) => FilterContent(),
 /// );
 /// ```
@@ -616,7 +679,15 @@ class _AnchoredSheetState extends AnchoredSheetState<AnchoredSheet> {
 /// * [AnchoredSheetModalManager] for advanced modal management
 Future<T?> anchoredSheet<T>({
   required BuildContext context,
-  required WidgetBuilder builder,
+  required Widget Function(
+    BuildContext context,
+    T? result,
+    VoidCallback? onNavigate,
+  ) builder,
+
+  // Optional navigation parameters
+  Future<T?> Function()? navigate,
+  AnchoredSheetConfig? navigationConfig,
   Color? backgroundColor,
   Color? shadowColor,
   double? elevation,
@@ -637,9 +708,22 @@ Future<T?> anchoredSheet<T>({
   bool useSafeArea = false,
   bool enableNested = false,
 }) async {
+  // If navigation function is provided, use navigation flow
+  if (navigate != null) {
+    final config = navigationConfig ?? const AnchoredSheetConfig();
+
+    return context.navigateAndReopenAnchor<T>(
+      anchorKey: anchorKey,
+      navigate: navigate,
+      sheetBuilder: builder, // Use the same builder function
+      config: config,
+    );
+  }
+
+  // Regular sheet without navigation - call builder with null values
   return anchoredSheetInternal<T>(
     context: context,
-    builder: builder,
+    builder: (context) => builder(context, null, null),
     backgroundColor: backgroundColor,
     shadowColor: shadowColor,
     elevation: elevation,
@@ -1019,8 +1103,11 @@ class _NavigationFlow<T extends Object?> {
   final GlobalKey? anchorKey;
   final AnchoredSheetConfig config;
   final Future<T?> Function() navigate;
-  final Widget Function(T? navigationResult, VoidCallback? onNavigate)
-      sheetBuilder;
+  final Widget Function(
+    BuildContext context,
+    T? navigationResult,
+    VoidCallback? onNavigate,
+  ) sheetBuilder;
 
   _NavigationFlow({
     required this.context,
@@ -1073,9 +1160,15 @@ class _NavigationFlow<T extends Object?> {
         enableDrag: config.enableDrag,
         backgroundColor: config.backgroundColor,
         isDismissible: config.isDismissible,
-        builder: (context) => sheetBuilder(
-          navigationResult,
-          () => _handleNavigation(completer),
+        builder: (context, result, onNavigate) =>
+            AnchoredSheetNavigationProvider(
+          onNavigate: () => _handleNavigation(completer),
+          canNavigate: !_isNavigating,
+          child: sheetBuilder(
+            context,
+            navigationResult,
+            () => _handleNavigation(completer),
+          ),
         ),
       ).then(
         (result) {
