@@ -81,65 +81,9 @@ import 'src.dart';
 final AnchoredSheetRouteObserver anchoredObserver =
     AnchoredSheetRouteObserver();
 
-/// Navigation provider that can be accessed from within sheet builders
-class AnchoredSheetNavigationProvider extends InheritedWidget {
-  const AnchoredSheetNavigationProvider({
-    super.key,
-    required this.onNavigate,
-    required this.canNavigate,
-    required super.child,
-  });
-
-  final VoidCallback? onNavigate;
-  final bool canNavigate;
-
-  static AnchoredSheetNavigationProvider? maybeOf(BuildContext context) {
-    return context
-        .dependOnInheritedWidgetOfExactType<AnchoredSheetNavigationProvider>();
-  }
-
-  static AnchoredSheetNavigationProvider of(BuildContext context) {
-    final result = maybeOf(context);
-    assert(
-      result != null,
-      'No AnchoredSheetNavigationProvider found in context',
-    );
-    return result!;
-  }
-
-  @override
-  bool updateShouldNotify(AnchoredSheetNavigationProvider oldWidget) {
-    return onNavigate != oldWidget.onNavigate ||
-        canNavigate != oldWidget.canNavigate;
-  }
-}
-
 /// Enhanced extension methods for BuildContext to provide
 /// convenient anchored sheet operations with improved error handling
 extension AnchoredSheetContext on BuildContext {
-  /// Trigger navigation from within a sheet builder
-  ///
-  /// This method can be called from any widget inside the sheet builder
-  /// to automatically trigger the navigation flow without needing to pass
-  /// callbacks through the widget tree.
-  ///
-  /// Returns `true` if navigation was triggered, `false` if no navigation
-  /// provider found.
-  bool triggerSheetNavigation() {
-    final provider = AnchoredSheetNavigationProvider.maybeOf(this);
-    if (provider?.canNavigate == true && provider?.onNavigate != null) {
-      provider!.onNavigate!();
-      return true;
-    }
-    return false;
-  }
-
-  /// Check if navigation is available from within this sheet
-  bool get canNavigateFromSheet {
-    final provider = AnchoredSheetNavigationProvider.maybeOf(this);
-    return provider?.canNavigate == true;
-  }
-
   /// Hide the current anchored sheet with enhanced error handling
   ///
   /// Returns `true` if a sheet was successfully dismissed, `false` otherwise.
@@ -257,28 +201,6 @@ extension AnchoredSheetContext on BuildContext {
   ///   anchorKey: myButtonKey,
   /// );
   /// ```
-  Future<T?> navigateAndReopenAnchor<T>({
-    required Future<T?> Function() navigate,
-    required Widget Function(
-      BuildContext context,
-      T? navigationResult,
-      VoidCallback? onNavigate,
-    ) sheetBuilder,
-    GlobalKey? anchorKey,
-    AnchoredSheetConfig? config,
-  }) async {
-    if (!mounted) return null;
-
-    final sheetConfig = config ?? const AnchoredSheetConfig();
-
-    return _NavigationFlow<T>(
-      context: this,
-      anchorKey: anchorKey,
-      config: sheetConfig,
-      navigate: navigate,
-      sheetBuilder: sheetBuilder,
-    ).execute();
-  }
 }
 
 /// AnchoredSheetPop utility class for context-based dismissal
@@ -596,25 +518,14 @@ class _AnchoredSheetState extends AnchoredSheetState<AnchoredSheet> {
 /// behaviors are built into the library, requiring no additional parameters or
 /// state management from the developer.
 ///
-/// ## Example Usage (Updated with Navigation Support!)
+/// ## Example Usage
 ///
 /// ```dart
 /// final GlobalKey buttonKey = GlobalKey();
 ///
-/// // Basic usage (no navigation)
+/// // Basic usage
 /// anchoredSheet(
 ///   context: context,
-///   builder: (context) => YourSheetContent(),
-/// );
-///
-/// // NEW: Sheet with navigation (unified API)
-/// anchoredSheet<String>(
-///   context: context,
-///   anchorKey: buttonKey,
-///   navigate: () => Navigator.push(
-///     context,
-///     MaterialPageRoute(builder: (context) => SelectionScreen()),
-///   ),
 ///   builder: (context) => YourSheetContent(),
 /// );
 ///
@@ -623,8 +534,6 @@ class _AnchoredSheetState extends AnchoredSheetState<AnchoredSheet> {
 ///   context: context,
 ///   anchorKey: buttonKey,
 ///   builder: (context) => MenuContent(),
-/// );
-///   builder: (context) => FilterContent(),
 /// );
 /// ```
 ///
@@ -679,15 +588,7 @@ class _AnchoredSheetState extends AnchoredSheetState<AnchoredSheet> {
 /// * [AnchoredSheetModalManager] for advanced modal management
 Future<T?> anchoredSheet<T>({
   required BuildContext context,
-  required Widget Function(
-    BuildContext context,
-    T? result,
-    VoidCallback? onNavigate,
-  ) builder,
-
-  // Optional navigation parameters
-  Future<T?> Function()? navigate,
-  AnchoredSheetConfig? navigationConfig,
+  required WidgetBuilder builder,
   Color? backgroundColor,
   Color? shadowColor,
   double? elevation,
@@ -708,22 +609,9 @@ Future<T?> anchoredSheet<T>({
   bool useSafeArea = false,
   bool enableNested = false,
 }) async {
-  // If navigation function is provided, use navigation flow
-  if (navigate != null) {
-    final config = navigationConfig ?? const AnchoredSheetConfig();
-
-    return context.navigateAndReopenAnchor<T>(
-      anchorKey: anchorKey,
-      navigate: navigate,
-      sheetBuilder: builder, // Use the same builder function
-      config: config,
-    );
-  }
-
-  // Regular sheet without navigation - call builder with null values
   return anchoredSheetInternal<T>(
     context: context,
-    builder: (context) => builder(context, null, null),
+    builder: builder,
     backgroundColor: backgroundColor,
     shadowColor: shadowColor,
     elevation: elevation,
@@ -942,14 +830,14 @@ OverlayEntry _createOverlayEntry<T extends Object?>({
       ModalManager(
         onDismissRequest: () {
           if (!controller.isCompleted) {
-            controller.dismiss();
+            controller.dismiss(T as T?);
           }
         },
         child: AnchoredSheet(
           controller: controller,
           onClosing: () {
             if (!controller.isCompleted) {
-              controller.dismiss();
+              controller.dismiss(T as T);
             }
           },
           backgroundColor: backgroundColor,
@@ -1069,210 +957,4 @@ Future<void> dismissAnchoredSheet<T extends Object?>([T? result]) async {
   }
 
   AppLogger.w('No active modal found to dismiss', tag: 'DismissAnchoredSheet');
-}
-
-/// Configuration class for anchored sheets to reduce parameter repetition
-class AnchoredSheetConfig {
-  final Duration dismissDelay;
-  final bool isScrollControlled;
-  final bool showDragHandle;
-  final bool useSafeArea;
-  final bool enableDrag;
-  final Color? backgroundColor;
-  final bool isDismissible;
-  final bool reopenOnlyIfResult;
-
-  const AnchoredSheetConfig({
-    this.dismissDelay = const Duration(milliseconds: 100),
-    this.isScrollControlled = true,
-    this.showDragHandle = true,
-    this.useSafeArea = true,
-    this.enableDrag = true,
-    this.backgroundColor,
-    this.isDismissible = true,
-    // By default reopen the sheet after navigation completes (even when
-    // navigation returned null, e.g. user pressed back). Set this to true
-    // to only reopen when a non-null result is returned.
-    this.reopenOnlyIfResult = false,
-  });
-}
-
-/// Enhanced navigation flow using Flutter's built-in lifecycle management
-class _NavigationFlow<T extends Object?> {
-  final BuildContext context;
-  final GlobalKey? anchorKey;
-  final AnchoredSheetConfig config;
-  final Future<T?> Function() navigate;
-  final Widget Function(
-    BuildContext context,
-    T? navigationResult,
-    VoidCallback? onNavigate,
-  ) sheetBuilder;
-
-  _NavigationFlow({
-    required this.context,
-    required this.anchorKey,
-    required this.config,
-    required this.navigate,
-    required this.sheetBuilder,
-  });
-
-  Future<T?> execute() async {
-    // Use Flutter's built-in error handling with try-catch
-    try {
-      final completer = Completer<T?>();
-
-      // Show initial sheet with proper lifecycle management
-      // _isNavigating prevents the initial dismissal (that triggers
-      // navigation) from completing the returned Future. Only the
-      // final (reopened) sheet will complete the completer.
-      _isNavigating = false;
-      _isReopened = false;
-      _showSheet(
-        null,
-        completer,
-      );
-
-      return completer.future;
-    } catch (e, stackTrace) {
-      AppLogger.e(
-        'Navigation flow failed',
-        error: e,
-        stackTrace: stackTrace,
-        tag: 'NavigationFlow',
-      );
-      return null;
-    }
-  }
-
-  bool _isNavigating = false;
-  bool _isReopened = false;
-
-  void _showSheet(T? navigationResult, Completer<T?> completer) {
-    // Use Flutter's built-in async pattern with proper error handling
-    unawaited(
-      anchoredSheet<T>(
-        context: context,
-        anchorKey: anchorKey,
-        isScrollControlled: config.isScrollControlled,
-        showDragHandle: config.showDragHandle,
-        useSafeArea: config.useSafeArea,
-        enableDrag: config.enableDrag,
-        backgroundColor: config.backgroundColor,
-        isDismissible: config.isDismissible,
-        builder: (context, result, onNavigate) =>
-            AnchoredSheetNavigationProvider(
-          onNavigate: () => _handleNavigation(completer),
-          canNavigate: !_isNavigating,
-          child: sheetBuilder(
-            context,
-            navigationResult,
-            () => _handleNavigation(completer),
-          ),
-        ),
-      ).then(
-        (result) {
-          // Only complete the returned Future for the final (reopened)
-          // sheet or for an initial sheet that was dismissed without
-          // starting navigation. If navigation is in progress we suppress
-          // completion because the flow will reopen the sheet later.
-          final wasReopened = _isReopened;
-          final navigationInProgress = _isNavigating;
-
-          if (wasReopened || !navigationInProgress) {
-            if (!completer.isCompleted) {
-              completer.complete(result);
-            }
-          } else {
-            // Suppress completion - we're in the middle of navigate() -> reopen
-            AppLogger.d(
-              'Suppressed premature completion during navigation',
-              tag: 'NavigationFlow',
-            );
-          }
-        },
-        onError: (Object error, StackTrace stackTrace) {
-          AppLogger.e(
-            'Sheet display failed',
-            error: error,
-            stackTrace: stackTrace,
-            tag: 'NavigationFlow',
-          );
-          if (!completer.isCompleted) {
-            completer.completeError(error, stackTrace);
-          }
-        },
-      ),
-    );
-  }
-
-  Future<void> _handleNavigation(Completer<T?> completer) async {
-    // Use Flutter's built-in async error handling
-    try {
-      // Prevent concurrent navigations from the same sheet
-      if (_isNavigating) return;
-      _isNavigating = true;
-
-      // Dismiss current sheet before navigation. Prefer awaiting the
-      // topmost controller's future instead of an arbitrary delay so we
-      // coordinate with the actual dismissal lifecycle.
-      final topController = ActiveSheetTracker.topmostController;
-      if (topController != null && !topController.isDisposed) {
-        try {
-          topController.dismiss();
-          // Wait for the controller future to complete, but guard with a
-          // timeout in case something goes wrong with the overlay lifecycle.
-          await topController.future.timeout(
-            const Duration(milliseconds: 600),
-            onTimeout: () => Future<void>.value(),
-          );
-        } catch (_) {
-          // Fallback: brief delay to allow animations to start
-          await Future<void>.delayed(const Duration(milliseconds: 150));
-        }
-      }
-
-      // Clear tracker only if it still references the dismissed controller
-      // (removeFromStack will keep stack integrity)
-      final controllerToRemove =
-          topController ?? ActiveSheetTracker.currentController;
-      if (controllerToRemove != null) {
-        ActiveSheetTracker.removeFromStack(controllerToRemove);
-      }
-
-      // If context is gone, complete with null
-      if (!context.mounted) {
-        if (!completer.isCompleted) completer.complete(null);
-        _isNavigating = false;
-        return;
-      }
-
-      // Execute navigation with Flutter's built-in error propagation
-      final navigationResult = await navigate();
-
-      // If the caller configured to only reopen when navigation returns a
-      // non-null result, respect that policy.
-      if (navigationResult == null && config.reopenOnlyIfResult) {
-        if (!completer.isCompleted) completer.complete(null);
-        _isNavigating = false;
-        return;
-      }
-
-      // Show sheet again with navigation result
-      _isReopened = true;
-      _isNavigating = false;
-      _showSheet(navigationResult, completer);
-    } catch (e, stackTrace) {
-      // Use Flutter's built-in error handling
-      AppLogger.e(
-        'Navigation failed',
-        error: e,
-        stackTrace: stackTrace,
-        tag: 'NavigationFlow',
-      );
-      if (!completer.isCompleted) {
-        completer.completeError(e, stackTrace);
-      }
-    }
-  }
 }
