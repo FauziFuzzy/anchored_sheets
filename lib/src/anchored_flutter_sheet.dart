@@ -474,7 +474,14 @@ class _AnchoredSheetState extends AnchoredSheetState<AnchoredSheet> {
             buildDismissibleOverlay(
               topOffset: calculatedTopOffset,
               fadeAnimation: fadeAnimation,
-              onTap: animateOut,
+              onTap: () {
+                // First animate out, then dismiss the controller
+                animateOut().then((_) {
+                  if (!widget.controller!.isCompleted) {
+                    widget.controller!.dismiss();
+                  }
+                });
+              },
               overlayColor: widget.overlayColor,
             ),
           buildPositionedModal(
@@ -830,14 +837,14 @@ OverlayEntry _createOverlayEntry<T extends Object?>({
       ModalManager(
         onDismissRequest: () {
           if (!controller.isCompleted) {
-            controller.dismiss(T as T?);
+            controller.dismiss();
           }
         },
         child: AnchoredSheet(
           controller: controller,
           onClosing: () {
             if (!controller.isCompleted) {
-              controller.dismiss(T as T);
+              controller.dismiss();
             }
           },
           backgroundColor: backgroundColor,
