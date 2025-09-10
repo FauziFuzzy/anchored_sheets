@@ -180,6 +180,7 @@ class ModalController<T> {
   final Completer<T?> _completer = Completer<T?>();
   bool _isDisposed = false;
   VoidCallback? _onStateChanged;
+  Future<void> Function()? _onAnimatedDismiss;
 
   /// Future that completes when the modal is dismissed
   Future<T?> get future => _completer.future;
@@ -198,6 +199,34 @@ class ModalController<T> {
     if (!_isDisposed) {
       _onStateChanged = callback;
     }
+  }
+
+  /// Sets the callback for animated dismissal
+  ///
+  /// This callback should handle the animation sequence before dismissal.
+  /// It will be called by [dismissWithAnimation] to trigger the animation.
+  void setAnimatedDismissCallback(Future<void> Function()? callback) {
+    if (!_isDisposed) {
+      _onAnimatedDismiss = callback;
+    }
+  }
+
+  /// Dismisses the modal with animation
+  ///
+  /// If an animated dismiss callback is set, it will be called first
+  /// to handle the animation, then the modal will be dismissed.
+  Future<void> dismissWithAnimation([T? result]) async {
+    if (_isDisposed || _completer.isCompleted) return;
+
+    if (_onAnimatedDismiss != null) {
+      try {
+        await _onAnimatedDismiss!();
+      } catch (e) {
+        // If animation fails, still dismiss the modal
+      }
+    }
+    
+    dismiss(result);
   }
 
   /// Dismisses the modal with an optional result

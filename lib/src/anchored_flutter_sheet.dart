@@ -307,6 +307,11 @@ class _AnchoredSheetState extends AnchoredSheetState<AnchoredSheet> {
     // Use Flutter's built-in controller management
     widget.controller?.setStateCallback(_updateState);
 
+    // Set up animated dismissal callback
+    widget.controller?.setAnimatedDismissCallback(() async {
+      await animateOut();
+    });
+
     // Register controller with RouteObserver for auto-dismiss
     if (widget.controller != null) {
       anchoredObserver.registerController(widget.controller!);
@@ -367,6 +372,7 @@ class _AnchoredSheetState extends AnchoredSheetState<AnchoredSheet> {
 
     // Use Flutter's built-in cleanup pattern
     widget.controller?.setStateCallback(null);
+    widget.controller?.setAnimatedDismissCallback(null);
     super.dispose();
   }
 
@@ -683,14 +689,16 @@ Future<T?> anchoredSheetInternal<T>({
     final currentController = ActiveSheetTracker.currentController;
     final currentAnchorKey = ActiveSheetTracker.currentAnchorKey;
 
-    // Handle duplicate anchor keys with immediate return (built-in behavior)
+    // Handle duplicate anchor keys with animated dismissal (built-in behavior)
     if (anchorKey != null && anchorKey == currentAnchorKey) {
       AppLogger.i(
-        'Duplicate anchor key detected - '
-        'dismissing existing sheet (key: $anchorKey)',
+        'Duplicate anchor key detected - triggering animated dismissal (key: $anchorKey)',
         tag: 'AnchoredSheet',
       );
-      currentController?.dismiss();
+      // Trigger animated dismissal using the new callback mechanism
+      if (!currentController!.isCompleted) {
+        currentController.dismissWithAnimation();
+      }
       return null; // Immediate return - no further processing
     }
 
@@ -843,6 +851,8 @@ OverlayEntry _createOverlayEntry<T extends Object?>({
         child: AnchoredSheet(
           controller: controller,
           onClosing: () {
+            // Follow the same pattern as tap dismissal for consistent animation
+            // Note: This is a workaround - ideally the architecture should handle this
             if (!controller.isCompleted) {
               controller.dismiss();
             }

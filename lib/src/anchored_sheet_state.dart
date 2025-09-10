@@ -246,8 +246,8 @@ abstract class AnchoredSheetState<T extends StatefulWidget> extends State<T>
   /// * Debug labels enable profiling in development builds
   void _setupAnimations() {
     controller = AnimationController(
-      duration: const Duration(milliseconds: 250),
-      reverseDuration: const Duration(milliseconds: 200),
+      duration: const Duration(milliseconds: 500),
+      reverseDuration: const Duration(milliseconds: 500),
       debugLabel: 'ModalAnimation',
       vsync: this,
     );

@@ -346,8 +346,16 @@ Widget buildPositionedModal({
       final screenHeight = MediaQuery.sizeOf(context).height;
 
       // Create the base content with proper scroll constraints
-      Widget content = FadeTransition(
-        opacity: fadeAnimation,
+      Widget content = SlideTransition(
+        position: Tween<Offset>(
+          begin: const Offset(0, -1), // Start above (slide down)
+          end: Offset.zero, // End at normal position
+        ).animate(
+          CurvedAnimation(
+            parent: fadeAnimation,
+            curve: Curves.easeOutCubic,
+          ),
+        ),
         child: onDismiss != null
             ? _ModalProvider(onDismiss: onDismiss, child: child)
             : child,
