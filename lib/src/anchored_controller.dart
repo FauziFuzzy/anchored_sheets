@@ -225,7 +225,7 @@ class ModalController<T> {
         // If animation fails, still dismiss the modal
       }
     }
-    
+
     dismiss(result);
   }
 
