@@ -247,7 +247,7 @@ abstract class AnchoredSheetState<T extends StatefulWidget> extends State<T>
   void _setupAnimations() {
     controller = AnimationController(
       duration: const Duration(milliseconds: 500),
-      reverseDuration: const Duration(milliseconds: 400),
+      reverseDuration: const Duration(milliseconds: 300),
       debugLabel: 'ModalAnimation',
       vsync: this,
     );

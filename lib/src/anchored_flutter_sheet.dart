@@ -692,7 +692,8 @@ Future<T?> anchoredSheetInternal<T>({
     // Handle duplicate anchor keys with animated dismissal (built-in behavior)
     if (anchorKey != null && anchorKey == currentAnchorKey) {
       AppLogger.i(
-        'Duplicate anchor key detected - triggering animated dismissal (key: $anchorKey)',
+        'Duplicate anchor key detected - '
+        'triggering animated dismissal (key: $anchorKey)',
         tag: 'AnchoredSheet',
       );
       // Trigger animated dismissal using the new callback mechanism
