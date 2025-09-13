@@ -93,6 +93,7 @@ Widget buildModalContent({
   ShapeBorder? shape,
   BorderRadius? borderRadius,
   Clip? clipBehavior,
+  BoxConstraints? constraints,
   bool useSafeArea = false,
   bool showDragHandle = false,
   bool isScrollControlled = false,
@@ -120,6 +121,29 @@ Widget buildModalContent({
   final effectiveClipBehavior =
       clipBehavior ?? effectiveTheme.clipBehavior ?? Clip.none;
 
+  Widget modalChild = showDragHandle
+      ? Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Flexible(child: child),
+            DragHandle(
+              onSemanticsTap: onDragHandleTap,
+              onHover: onDragHandleHover ?? (_) {},
+              states: dragHandleStates ?? <WidgetState>{},
+              color: dragHandleColor,
+              size: dragHandleSize,
+            ),
+          ],
+        )
+      : child;
+
+  if (constraints != null) {
+    modalChild = ConstrainedBox(
+      constraints: constraints,
+      child: modalChild,
+    );
+  }
+
   Widget content = Material(
     key: childKey,
     color: effectiveBackgroundColor,
@@ -127,21 +151,7 @@ Widget buildModalContent({
     shadowColor: effectiveShadowColor,
     shape: effectiveShape,
     clipBehavior: effectiveClipBehavior,
-    child: showDragHandle
-        ? Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Flexible(child: child),
-              DragHandle(
-                onSemanticsTap: onDragHandleTap,
-                onHover: onDragHandleHover ?? (_) {},
-                states: dragHandleStates ?? <WidgetState>{},
-                color: dragHandleColor,
-                size: dragHandleSize,
-              ),
-            ],
-          )
-        : child,
+    child: modalChild,
   );
 
   if (useSafeArea) {

@@ -453,6 +453,7 @@ class _AnchoredSheetState extends AnchoredSheetState<AnchoredSheet> {
       shape: widget.shape,
       borderRadius: widget.borderRadius,
       clipBehavior: widget.clipBehavior,
+      constraints: widget.constraints,
       useSafeArea: removedSpacingTop,
       isScrollControlled: widget.isScrollControlled,
       hasAnchorKey: widget.anchorKey != null,
