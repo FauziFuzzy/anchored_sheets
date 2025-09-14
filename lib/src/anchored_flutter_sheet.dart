@@ -832,8 +832,6 @@ OverlayEntry _createOverlayEntry<T extends Object?>({
         child: AnchoredSheet(
           controller: controller,
           onClosing: () {
-            // Follow the same pattern as tap dismissal for consistent animation
-            // Note: This is a workaround - ideally the architecture should handle this
             if (!controller.isCompleted) {
               controller.dismiss();
             }
