@@ -156,7 +156,6 @@ Widget buildModalContent({
 
   if (useSafeArea) {
     content = SafeArea(
-      // Smart SafeArea logic:
       top: !hasAnchorKey && !isScrollControlled,
       left: false,
       right: false,
@@ -355,11 +354,10 @@ Widget buildPositionedModal({
           isScrollControlled && topOffset <= statusBarHeight;
       final screenHeight = MediaQuery.sizeOf(context).height;
 
-      // Create the base content with proper scroll constraints
       Widget content = SlideTransition(
         position: Tween<Offset>(
-          begin: const Offset(0, -1), // Start above (slide down)
-          end: Offset.zero, // End at normal position
+          begin: const Offset(0, -10),
+          end: Offset.zero,
         ).animate(
           CurvedAnimation(
             parent: fadeAnimation,
@@ -371,8 +369,6 @@ Widget buildPositionedModal({
             : child,
       );
 
-      // Apply consistent constraint strategy for both scroll controlled and
-      // non-scroll controlled sheets to support MainAxisSize.min
       final maxHeight = isScrollControlled
           ? (shouldExtendToStatusBar
               ? screenHeight
@@ -382,16 +378,11 @@ Widget buildPositionedModal({
       content = ConstrainedBox(
         constraints: BoxConstraints(
           maxHeight: maxHeight,
-          // Don't set minHeight - let the child determine its natural height
-          // This enables MainAxisSize.min to work properly
         ),
         child: ClipRect(child: content),
       );
 
-      // If sheet overlaps with status bar, extend background and respect
-      // safe area
       if (shouldExtendToStatusBar) {
-        // Use a single Material container for unified rendering
         return Positioned(
           top: slideAnimation.value * height,
           left: 0,
@@ -399,7 +390,6 @@ Widget buildPositionedModal({
           child: content,
         );
       } else {
-        // Calculate animation start position based on whether we have an anchor
         return Positioned(
           top: topOffset + (slideAnimation.value * height),
           left: 0,
@@ -541,15 +531,11 @@ double calculateModalHeight({
   bool isScrollControlled = false,
   bool hasAnchorKey = false,
 }) {
-  // For scroll controlled sheets, provide full available height as the maximum
-  // constraint, but let content size naturally (MainAxisSize.min support)
   if (isScrollControlled) {
     return availableHeight;
   }
 
-  // For non-scroll controlled sheets, use default fraction
-  // like showModalBottomSheet to provide consistent behavior
-  return availableHeight * 9.0 / 16.0; // ~56% of screen height
+  return availableHeight * 9.0 / 16.0;
 }
 
 /// Reusable drag handle widget for modal sheets

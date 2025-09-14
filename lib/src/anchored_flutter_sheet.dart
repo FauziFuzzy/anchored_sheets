@@ -74,7 +74,6 @@ library;
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/scheduler.dart';
 
 import 'src.dart';
 
@@ -316,6 +315,13 @@ class _AnchoredSheetState extends AnchoredSheetState<AnchoredSheet> {
     if (widget.controller != null) {
       anchoredObserver.registerController(widget.controller!);
     }
+
+    // Start animation immediately to prevent glitches
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        animateIn();
+      }
+    });
   }
 
   @override
@@ -323,33 +329,6 @@ class _AnchoredSheetState extends AnchoredSheetState<AnchoredSheet> {
     super.didChangeDependencies();
 
     _recalculateOffsetAndHeight();
-
-    // Use Flutter's built-in post-frame callback for proper initialization
-    SchedulerBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        try {
-          animateIn();
-        } catch (error, stackTrace) {
-          // Use Flutter's built-in error handling
-          FlutterError.reportError(
-            FlutterErrorDetails(
-              exception: error,
-              stack: stackTrace,
-              library: 'anchored_sheets',
-              context: ErrorDescription(
-                'Animation error during sheet initialization',
-              ),
-            ),
-          );
-          AppLogger.e(
-            'Animation error during sheet initialization',
-            error: error,
-            stackTrace: stackTrace,
-            tag: 'AnchoredSheetState',
-          );
-        }
-      }
-    });
   }
 
   @override
